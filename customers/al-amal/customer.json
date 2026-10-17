@@ -1,0 +1,23 @@
+{
+  "id": "al-amal",
+  "name": { "en": "Al-Amal Hospital", "ar": "مستشفى الأمل" },
+  "products": ["billing"],
+  "extensions": {
+    "slots": { "visit.side-panel": "LoyaltyCard" },
+    "nav": [
+      {
+        "href": "/reports/insurer-monthly",
+        "icon": "report",
+        "section": "revenue",
+        "label": { "en": "Insurer monthly report", "ar": "تقرير التأمين الشهري" }
+      }
+    ],
+    "routes": [
+      {
+        "path": "reports/insurer-monthly",
+        "export": "InsurerReport",
+        "title": { "en": "Insurer monthly report", "ar": "تقرير التأمين الشهري" }
+      }
+    ]
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "billing",
+  "package": "@his/billing",
+  "name": { "en": "Billing", "ar": "الفوترة" },
+  "nav": [
+    { "href": "/billing/invoices", "icon": "receipt", "section": "revenue", "label": { "en": "Invoices", "ar": "الفواتير" } }
+  ],
+  "routes": [
+    { "path": "billing/invoices", "export": "InvoicesPage", "title": { "en": "Invoices", "ar": "الفواتير" } }
+  ]
+}

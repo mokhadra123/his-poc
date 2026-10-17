@@ -1,0 +1,11 @@
+{
+  "id": "pharmacy",
+  "package": "@his/pharmacy",
+  "name": { "en": "Pharmacy", "ar": "الصيدلية" },
+  "nav": [
+    { "href": "/pharmacy/stock", "icon": "pill", "section": "care", "label": { "en": "Pharmacy stock", "ar": "مخزون الصيدلية" } }
+  ],
+  "routes": [
+    { "path": "pharmacy/stock", "export": "StockPage", "title": { "en": "Pharmacy stock", "ar": "مخزون الصيدلية" } }
+  ]
+}

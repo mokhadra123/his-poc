@@ -1,0 +1,231 @@
+/* ============================================================
+   @his/ui — import once, after tailwindcss:
+
+     @import "tailwindcss";
+     @import "@his/ui/styles.css";
+
+   The default Tailwind palette, radii, type scale and shadows are
+   removed on purpose: `bg-blue-600` or `rounded-xl` do not compile.
+   The only colours that exist are the roles below.
+   ============================================================ */
+
+@import "./tokens.css";
+
+/* scan the component sources so their classes are generated */
+@source "..";
+
+@custom-variant dark (&:where(.dark, .dark *));
+/* "original" (HIS today) has one density, so comfortable never applies to it */
+@custom-variant comfortable (&:where([data-density="comfortable"]:not([data-theme="original"]), [data-density="comfortable"]:not([data-theme="original"]) *));
+/* Below md the sidebar is always a rail, whatever the user chose. */
+@custom-variant nav-collapsed {
+  &:where([data-nav="collapsed"], [data-nav="collapsed"] *) {
+    @slot;
+  }
+  @media (width < 48rem) {
+    @slot;
+  }
+}
+/* Custom state variants are emitted after every breakpoint, so they
+   beat max-*: utilities. Scope them with a breakpoint at the call site
+   (xl:rail-collapsed:hidden) when they must not apply on small screens. */
+@custom-variant rail-collapsed (&:where([data-rail="collapsed"], [data-rail="collapsed"] *));
+
+@theme {
+  --color-*: initial;
+  --radius-*: initial;
+  --text-*: initial;
+  --shadow-*: initial;
+  --inset-shadow-*: initial;
+  --drop-shadow-*: initial;
+  --text-shadow-*: initial;
+  --font-*: initial;
+}
+
+@theme inline {
+  --font-sans: var(--ui-font, system-ui, sans-serif);
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* neutrals */
+  --color-transparent: transparent;
+  --color-current: currentColor;
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-input: var(--input-bg);
+  --color-thead: var(--thead-bg);
+  --color-row-hover: var(--row-hover);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-line: var(--line);
+  --color-line-2: var(--line-2);
+  --color-control-line: var(--control-line);
+  --color-card-line: var(--card-line);
+  --color-heading-ink: var(--heading-ink);
+  --color-thead-ink: var(--thead-ink);
+  --color-cell-ink: var(--cell-ink);
+  --color-step-current: var(--step-current-bg);
+  --color-step-current-ink: var(--step-current-ink);
+  --color-step-done: var(--step-done-bg);
+  --color-step-done-ink: var(--step-done-ink);
+
+  /* accent: what you can act on */
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-line: var(--accent-line);
+  --color-accent-text: var(--accent-text);
+  --color-focus: var(--focus);
+  --color-accent-edge: var(--accent-edge);
+
+  /* clinical state */
+  --color-critical: var(--critical);
+  --color-critical-soft: var(--critical-soft);
+  --color-critical-line: var(--critical-line);
+  --color-critical-solid: var(--critical-solid);
+  --color-critical-solid-ink: var(--critical-solid-ink);
+  --color-caution: var(--caution);
+  --color-caution-soft: var(--caution-soft);
+  --color-caution-line: var(--caution-line);
+  --color-stable: var(--stable);
+  --color-stable-soft: var(--stable-soft);
+  --color-stable-line: var(--stable-line);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-info-line: var(--info-line);
+
+  /* chrome: the top band */
+  --color-chrome: var(--chrome-bg);
+  --color-chrome-ink: var(--chrome-ink);
+  --color-chrome-ink-dim: var(--chrome-ink-dim);
+  --color-chrome-line: var(--chrome-line);
+  --color-chrome-icon: var(--chrome-icon-bg);
+  --color-chrome-icon-line: var(--chrome-icon-line);
+  --color-chrome-icon-ink: var(--chrome-icon-ink);
+  --color-chrome-field: var(--chrome-field-bg);
+  --color-chrome-field-line: var(--chrome-field-line);
+  --color-chrome-field-ink: var(--chrome-field-ink);
+  --color-mark: var(--mark-bg);
+  --color-mark-ink: var(--mark-ink);
+
+  /* navigation */
+  --color-nav: var(--nav-bg);
+  --color-nav-line: var(--nav-line);
+  --color-nav-ink: var(--nav-ink);
+  --color-nav-ink-strong: var(--nav-ink-strong);
+  --color-nav-ink-dim: var(--nav-ink-dim);
+  --color-nav-hover: var(--nav-hover);
+  --color-nav-active: var(--nav-active-bg);
+  --color-nav-active-ink: var(--nav-active-ink);
+  --color-nav-marker: var(--nav-marker);
+  --color-nav-foot: var(--nav-foot-bg);
+  --color-nav-head: var(--nav-head-bg);
+  --color-nav-head-ink: var(--nav-head-ink);
+  --color-nav-head-ink-dim: var(--nav-head-ink-dim);
+  --color-nav-head-line: var(--nav-head-line);
+  --color-nav-head-hover: var(--nav-head-hover);
+
+  /* shape */
+  --radius-ctl: var(--r-ctl);
+  --radius-card: var(--r-card);
+  --radius-chip: var(--r-chip);
+
+  /* type scale — follows density */
+  --text-2xs: var(--fs-2xs);
+  --text-xs: var(--fs-xs);
+  --text-sm: var(--fs-sm);
+  --text-md: var(--fs-md);
+  --text-lg: var(--fs-lg);
+  --text-xl: var(--fs-xl);
+  --text-2xl: var(--fs-2xl);
+  --text-3xl: var(--fs-3xl);
+
+  /* named sizes — follow density: h-row, h-control, p-pad, gap-stack … */
+  --spacing-row: var(--row-h);
+  --spacing-control: var(--control-h);
+  --spacing-control-sm: var(--control-h-sm);
+  --spacing-chip: var(--chip-h);
+  --spacing-toggle: var(--toggle-h);
+  --spacing-nav-item: var(--nav-item-h);
+  --spacing-topbar: var(--topbar-h);
+  --spacing-nav: var(--nav-w);
+  --spacing-rail: 68px;
+  --spacing-stack: var(--stack);
+  --spacing-pad: var(--pad);
+  --spacing-pad-y: var(--pad-y);
+  --spacing-gutter: var(--gutter);
+  --spacing-page-y: var(--page-y);
+  --spacing-cell: var(--cell-x);
+  --spacing-row-y: var(--row-y);
+
+  --shadow-float: var(--overlay-shadow);
+  --shadow-card: var(--card-shadow);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: var(--fs-md);
+    line-height: 1.45;
+    font-variant-numeric: tabular-nums;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  /* Windows High Contrast replaces every tint, so selected, pressed and
+     current states would only keep a font weight. Give them the system
+     highlight instead. !important: the state utilities live in a later
+     layer and would otherwise win with forced-color-adjust off. */
+  @media (forced-colors: active) {
+    [aria-pressed="true"],
+    [aria-current]:not([aria-current="false"]) {
+      forced-color-adjust: none;
+      background: Highlight !important;
+      color: HighlightText !important;
+      border-color: Highlight !important;
+    }
+    /* children (a count, a label) follow the highlight text */
+    [aria-pressed="true"] *,
+    [aria-current]:not([aria-current="false"]) * {
+      color: inherit !important;
+    }
+    /* the ring is drawn on Canvas, so CanvasText always reads */
+    [aria-pressed="true"]:focus-visible,
+    [aria-current]:not([aria-current="false"]):focus-visible {
+      outline-color: CanvasText !important;
+    }
+  }
+
+  /* print what is on screen, tints included (state is carried by them) */
+  @media print {
+    html {
+      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact;
+    }
+  }
+
+  ::selection {
+    background: var(--accent-soft);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+}

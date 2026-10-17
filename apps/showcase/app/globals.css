@@ -1,0 +1,51 @@
+@import "tailwindcss";
+@import "@his/ui/styles.css";
+/* @source for the products this customer has (scripts/compose.mjs) */
+@import "./products.generated.css";
+
+@layer base {
+  /* Arabic text gets the Arabic face FIRST. Listing it second is not enough:
+     next/font adds a Latin fallback face (local Arial, no unicode-range) right
+     after IBM Plex Sans, and that face claims every Arabic glyph. Elements are
+     matched by language, so an Arabic name inside the English UI (lang="ar")
+     is covered too. */
+  :root {
+    --ui-font-latin: var(--font-plex), var(--font-plex-ar), system-ui, sans-serif;
+    --ui-font-arabic: var(--font-plex-ar), var(--font-plex), system-ui, sans-serif;
+    --ui-font: var(--ui-font-latin);
+  }
+  /* :where() keeps these at zero specificity, so code/pre keep their monospace */
+  :where(:lang(ar)) {
+    font-family: var(--ui-font-arabic);
+  }
+  :where(:lang(en)) {
+    font-family: var(--ui-font-latin);
+  }
+
+  /* "HIS today" keeps the original fonts: Rubik for English, Almarai for Arabic
+     (HIS switches the whole body font on dir, so Latin inside Arabic is Almarai too) */
+  [data-theme="original"] {
+    --ui-font-latin: var(--font-rubik), system-ui, sans-serif;
+    --ui-font-arabic: var(--font-almarai), system-ui, sans-serif;
+  }
+  [dir="rtl"][data-theme="original"],
+  [dir="rtl"] [data-theme="original"] {
+    --ui-font-latin: var(--font-almarai), system-ui, sans-serif;
+  }
+  /* and in the English UI everything, Arabic names included, goes through Rubik's stack */
+  [dir="ltr"][data-theme="original"],
+  [dir="ltr"] [data-theme="original"] {
+    --ui-font-arabic: var(--font-rubik), system-ui, sans-serif;
+  }
+}
+
+/* gallery: outline the preview of the theme <html> is using, without a server round-trip */
+:root[data-theme="slate"] [data-preview="slate"],
+:root[data-theme="ink"] [data-preview="ink"],
+:root[data-theme="pine"] [data-preview="pine"],
+:root[data-theme="graphite"] [data-preview="graphite"],
+:root[data-theme="custom"] [data-preview="custom"],
+:root[data-theme="original"] [data-preview="original"] {
+  border-color: var(--accent-text);
+  box-shadow: 0 0 0 2px var(--accent-line);
+}

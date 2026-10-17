@@ -1,0 +1,639 @@
+/* ============================================================
+   @his/ui — tokens
+
+   Read top to bottom. Every block only sets CSS variables; the
+   Tailwind mapping lives in index.css.
+
+   1. System values   neutrals, clinical state, shape     (fixed)
+   2. Accent roles    derived from --brand                (computed)
+   3. Themes          --brand + chrome + navigation       (per hospital)
+   4. Dark mode       the same three layers, inverted
+   5. Density         sizes and type scale                (per user)
+
+   Clinical colours are deliberately NOT theme inputs. A hospital
+   can rebrand the chrome; it cannot make "critical" a new colour.
+
+   Every color-mix() lists the dominant colour first. Browsers
+   without color-mix() fall back to that first colour, so the
+   fallback is a readable neutral rather than raw --brand.
+
+   Text pairs are held to WCAG 2.1 AA (4.5:1) in every theme and
+   mode; control boundaries and focus rings to 3:1.
+   ============================================================ */
+
+@layer base {
+  /* ---------- 1. system values (light) ---------- */
+  :root {
+    color-scheme: light;
+
+    --bg-base: #fafbfc;
+    --surface: #ffffff;
+    --surface-2: #f2f5f8;
+    --input-bg: #ffffff;
+    --thead-bg: #fbfcfd;
+    --row-hover: #f7f9fb;
+
+    --ink: #0f1520;
+    --ink-2: #3c4656;
+    --ink-3: #5f6b7b;
+    --line: #e3e8ed;
+    --line-2: #eef1f5;
+    /* boundaries that identify a control (inputs) — 3:1 */
+    --control-line: #8a95a3;
+
+    --overlay-shadow: 0 2px 14px rgb(15 21 32 / 0.07);
+
+    /* clinical state — the only saturated colour in the product */
+    --critical: #b8342a;
+    --critical-soft: #fbedeb;
+    --critical-line: #efc6c1;
+    --critical-solid: #b8342a;
+    --critical-solid-ink: #ffffff;
+    --caution: #8e5e00;
+    --caution-soft: #fbf3e2;
+    --caution-line: #ecd9ae;
+    --stable: #15705a;
+    --stable-soft: #e7f3ef;
+    --stable-line: #bedfd3;
+    --info: #2a5a9e;
+    --info-soft: #ebf1f9;
+    --info-line: #c6d6ee;
+
+    /* shape is structural: chosen once, never themed */
+    --r-ctl: 4px;
+    --r-card: 6px;
+    --r-chip: 4px;
+  }
+
+  /* ---------- 2. accent roles, computed from --brand ----------
+     Declared on every [data-theme] too, so a nested theme (the
+     previews on the design-system page) recomputes them instead of
+     inheriting the outer theme's values.
+
+     --brand-ink   text on a brand fill (white unless a theme says so)
+     --brand-text  the brand as text on a light surface (4.5:1) */
+  :root,
+  [data-theme] {
+    --bg: var(--bg-base);
+    --brand-ink: #ffffff;
+    --brand-text: var(--brand);
+    /* hover moves away from the ink: darker under white text, lighter under dark text */
+    --hover-toward: black;
+
+    --accent: var(--brand);
+    --accent-hover: color-mix(in oklab, var(--brand) 86%, var(--hover-toward));
+    --accent-ink: var(--brand-ink);
+    --accent-soft: color-mix(in oklab, var(--surface) 90%, var(--brand));
+    --accent-line: color-mix(in oklab, var(--surface) 70%, var(--brand));
+    --accent-text: var(--brand-text);
+    --focus: var(--brand-text);
+  }
+
+  /* ---------- 3. themes ----------
+     A theme sets --brand and decides how the chrome carries it.
+     Two chrome styles exist:
+       band   the top bar is the brand colour (slate, custom)
+       plain  the top bar is a surface      (ink, pine, graphite) */
+
+  /* band chrome, derived entirely from --brand and --brand-ink */
+  :root,
+  [data-theme="slate"],
+  [data-theme="custom"] {
+    --chrome-bg: var(--brand);
+    --chrome-ink: var(--brand-ink);
+    --chrome-ink-dim: color-mix(in oklab, var(--brand-ink) 72%, var(--brand));
+    --chrome-line: color-mix(in oklab, var(--brand) 82%, black);
+    --chrome-icon-bg: color-mix(in oklab, transparent 89%, var(--brand-ink));
+    --chrome-icon-line: color-mix(in oklab, transparent 76%, var(--brand-ink));
+    --chrome-icon-ink: color-mix(in oklab, var(--brand-ink) 88%, var(--brand));
+    --chrome-field-bg: #ffffff;
+    --chrome-field-line: var(--chrome-line);
+    --chrome-field-ink: var(--ink-3);
+    /* a ring in the brand colour would vanish on a brand band */
+    --chrome-focus: var(--chrome-ink);
+    --mark-bg: var(--brand-ink);
+    --mark-ink: var(--brand);
+
+    --nav-bg: color-mix(in oklab, var(--surface) 96%, var(--brand));
+    --nav-line: color-mix(in oklab, var(--line) 92%, var(--brand));
+    --nav-ink: color-mix(in oklab, var(--ink-3) 78%, var(--brand));
+    --nav-ink-strong: color-mix(in oklab, var(--ink) 75%, var(--brand));
+    --nav-ink-dim: var(--ink-3);
+    --nav-hover: color-mix(in oklab, var(--surface) 93%, var(--brand));
+    --nav-active-bg: color-mix(in oklab, var(--surface) 88%, var(--brand));
+    --nav-active-ink: var(--nav-ink-strong);
+    --nav-marker: var(--accent-text);
+    --nav-foot-bg: color-mix(in oklab, var(--surface) 94%, var(--brand));
+    --nav-focus: var(--focus);
+  }
+
+  /* Optional chrome roles. By default the sidebar head belongs to the top
+     band and the rail is a flat colour; a theme may tie the head to the
+     rail instead, or give the rail an image (the "original" theme does). */
+  :root,
+  [data-theme] {
+    --nav-image: none;
+    --nav-head-bg: var(--chrome-bg);
+    --nav-head-ink: var(--chrome-ink);
+    --nav-head-ink-dim: var(--chrome-ink-dim);
+    --nav-head-line: var(--chrome-line);
+    --nav-head-hover: var(--chrome-icon-bg);
+    --nav-head-focus: var(--chrome-focus);
+    --card-shadow: 0 0 #0000;
+
+    /* Finer roles. The new themes leave them on these defaults; they exist so
+       a theme like "original" can reproduce another system's details. */
+    --card-line: var(--line);
+    --heading-ink: var(--ink);
+    --thead-ink: var(--ink-3);
+    --thead-fs: var(--fs-xs);
+    --thead-weight: 500;
+    --thead-h: 36px;
+    --cell-ink: var(--ink);
+    --nav-radius: var(--r-ctl);
+    --nav-fs: var(--fs-md);
+    --nav-active-weight: 600;
+    --mark-radius: var(--r-ctl);
+    --mark-size: 26px;
+    --chrome-icon-size: var(--control-h);
+    --chrome-icon-radius: var(--r-ctl);
+    --chrome-icon-shadow: 0 0 #0000;
+    --step-current-bg: var(--accent-text);
+    --step-current-ink: var(--surface);
+    --step-done-bg: var(--surface-2);
+    --step-done-ink: var(--ink-2);
+    /* the primary button's edge: the fill itself, unless the fill is too
+       close to the surface (a white brand), then a measured darker edge */
+    --accent-edge: var(--accent);
+  }
+
+  :root,
+  [data-theme="slate"] {
+    --brand: #2c4a6b;
+  }
+
+  /* plain chrome, shared by ink / pine / graphite */
+  [data-theme="ink"],
+  [data-theme="pine"],
+  [data-theme="graphite"] {
+    --chrome-bg: var(--surface);
+    --chrome-ink: var(--ink);
+    --chrome-ink-dim: var(--ink-3);
+    --chrome-line: var(--line);
+    --chrome-icon-bg: var(--surface);
+    --chrome-icon-line: var(--line);
+    --chrome-icon-ink: var(--ink-2);
+    --chrome-field-bg: var(--input-bg);
+    --chrome-field-line: var(--control-line);
+    --chrome-field-ink: var(--ink-3);
+    --chrome-focus: var(--focus);
+    --mark-bg: var(--accent);
+    --mark-ink: var(--accent-ink);
+
+    --nav-bg: var(--surface);
+    --nav-line: var(--line);
+    --nav-ink: var(--ink-3);
+    --nav-ink-strong: var(--ink);
+    --nav-ink-dim: var(--ink-3);
+    --nav-hover: var(--surface-2);
+    --nav-active-bg: var(--surface-2);
+    --nav-active-ink: var(--ink);
+    --nav-marker: var(--accent-text);
+    --nav-foot-bg: var(--surface);
+    --nav-focus: var(--focus);
+  }
+
+  /* Ink: no brand colour at all — the accent IS the ink, so it
+     inverts with the mode on its own. */
+  [data-theme="ink"] {
+    --brand: var(--ink);
+    --brand-ink: var(--surface);
+  }
+
+  /* Pine: a sage ground and a pill for the active item */
+  [data-theme="pine"] {
+    --brand: #2f5d50;
+    --bg: color-mix(in oklab, #f6f8f6 95%, var(--brand));
+    --nav-active-bg: var(--accent-soft);
+    --nav-active-ink: var(--accent-text);
+  }
+
+  /* Graphite: a dark rail beside a bright workspace. The rail needs
+     its own light marker and focus ring; the brand is too dark there. */
+  [data-theme="graphite"] {
+    --brand: #2b54de;
+    --nav-bg: #191d25;
+    --nav-line: #272c36;
+    --nav-ink: #a4acb8;
+    --nav-ink-strong: #ffffff;
+    --nav-ink-dim: #9099a6;
+    --nav-hover: #232832;
+    --nav-active-bg: #2a3140;
+    --nav-active-ink: #ffffff;
+    --nav-foot-bg: #15181f;
+    --nav-marker: #7f9cf0;
+    --nav-focus: #7f9cf0;
+  }
+
+  /* Custom: the hospital's colour, written on <html> by the server
+     (and by setPref) as --brand-custom with its derived ink and text
+     colours, so a dark or a pale brand both stay readable. */
+  [data-theme="custom"] {
+    --brand: var(--brand-custom, #7a3e9d);
+    --brand-ink: var(--brand-custom-ink, #ffffff);
+    --brand-text: var(--brand-custom-text, var(--brand));
+    --hover-toward: var(--brand-custom-hover-toward, black);
+    /* fixed mixes cannot hold 4.5:1 for every colour, so these are measured
+       in deriveBrand() and written next to --brand-custom */
+    --chrome-ink-dim: var(--brand-custom-ink-dim, var(--brand-ink));
+    --chrome-field-line: var(--brand-custom-field-line, var(--chrome-line));
+    --accent-edge: var(--brand-custom-edge, var(--accent));
+    --nav-ink: color-mix(in oklab, var(--ink-3) 78%, var(--brand-text));
+    --nav-ink-strong: color-mix(in oklab, var(--ink) 75%, var(--brand-text));
+  }
+
+  /* ---------- 4. dark mode ---------- */
+  /* screen only: a printout is always light, dark ink on white paper */
+  @media screen {
+    .dark {
+      color-scheme: dark;
+
+      --bg-base: #0d1015;
+      --surface: #151920;
+      --surface-2: #1d232c;
+      --input-bg: #11151b;
+      --thead-bg: #181c23;
+      --row-hover: #1a1f27;
+
+      --ink: #e7ebf1;
+      --ink-2: #b6bfcb;
+      --ink-3: #8691a1;
+      --line: #29313c;
+      --line-2: #212831;
+      --control-line: #5d6878;
+
+      --overlay-shadow: 0 2px 18px rgb(0 0 0 / 0.45);
+
+      --critical: #f28b82;
+      --critical-soft: #3b1f1d;
+      --critical-line: #6b302b;
+      --critical-solid: #c4473d;
+      --critical-solid-ink: #ffffff;
+      --caution: #e7be63;
+      --caution-soft: #33291a;
+      --caution-line: #5f4b22;
+      --stable: #63c7a5;
+      --stable-soft: #15302a;
+      --stable-line: #245648;
+      --info: #86aaea;
+      --info-soft: #1a2639;
+      --info-line: #2e4667;
+    }
+
+    /* A brand that works as a fill on white is too dark to read as
+       text on near-black, so dark mode lifts the text roles. The fill
+       is lifted only a little, so white on it still clears 4.5:1. */
+    .dark,
+    .dark [data-theme] {
+      --bg: var(--bg-base);
+      --accent: color-mix(in oklab, var(--brand) 92%, white);
+      --accent-hover: color-mix(in oklab, var(--accent) 88%, var(--hover-toward));
+      --accent-soft: color-mix(in oklab, var(--surface) 76%, var(--brand));
+      --accent-line: color-mix(in oklab, var(--surface) 50%, var(--brand));
+      --accent-text: color-mix(in oklab, white 50%, var(--brand));
+      --focus: var(--accent-text);
+    }
+
+    .dark:not([data-theme]),
+    .dark[data-theme="slate"],
+    .dark[data-theme="custom"],
+    .dark [data-theme="slate"],
+    .dark [data-theme="custom"] {
+      --chrome-bg: color-mix(in oklab, #0d1015 58%, var(--brand));
+      --chrome-ink: #ffffff;
+      --chrome-ink-dim: color-mix(in oklab, #c9d3de 75%, var(--brand));
+      --chrome-line: color-mix(in oklab, #0d1015 70%, var(--brand));
+      --chrome-icon-bg: rgb(255 255 255 / 0.08);
+      --chrome-icon-line: rgb(255 255 255 / 0.2);
+      --chrome-icon-ink: #dfe5ec;
+      --chrome-field-bg: var(--input-bg);
+      --chrome-field-line: color-mix(in oklab, var(--chrome-bg) 60%, #ffffff);
+      --chrome-field-ink: var(--ink-3);
+      --mark-bg: var(--accent);
+      --mark-ink: var(--accent-ink);
+
+      --nav-ink: color-mix(in oklab, var(--ink-2) 88%, var(--brand));
+      --nav-ink-strong: var(--ink);
+      --nav-hover: var(--surface-2);
+      --nav-active-bg: var(--accent-soft);
+    }
+
+    .dark[data-theme="ink"],
+    .dark [data-theme="ink"] {
+      --accent: var(--brand);
+      --hover-toward: white;
+      --accent-text: var(--brand);
+    }
+
+    /* custom in dark: fill and text are measured (deriveBrand), and the dim
+       chrome text simply matches the chrome ink — a fixed mix cannot hold
+       4.5:1 on every band */
+    .dark[data-theme="custom"],
+    .dark [data-theme="custom"] {
+      --accent: var(--brand-custom-fill-dark, color-mix(in oklab, var(--brand) 92%, white));
+      --accent-text: var(--brand-custom-text-dark, color-mix(in oklab, white 50%, var(--brand)));
+      --accent-edge: var(--brand-custom-edge-dark, var(--accent));
+      --chrome-ink-dim: var(--chrome-ink);
+      --chrome-field-line: var(--brand-custom-field-line-dark, var(--control-line));
+    }
+
+    .dark[data-theme="graphite"],
+    .dark [data-theme="graphite"] {
+      --nav-bg: #0a0c10;
+      --nav-line: #1d222b;
+      --nav-hover: #151920;
+      --nav-active-bg: #1f2531;
+      --nav-foot-bg: #08090c;
+    }
+  }
+
+  /* ---------- 5. density ---------- */
+  :root,
+  [data-density="compact"] {
+    --fs-2xs: 11px;
+    --fs-xs: 11.5px;
+    --fs-sm: 12.5px;
+    --fs-md: 13.5px;
+    --fs-lg: 14px;
+    --fs-xl: 17px;
+    --fs-2xl: 22px;
+    --fs-3xl: 25px;
+
+    --row-h: 36px;
+    --control-h: 32px;
+    --control-h-sm: 28px;
+    --chip-h: 22px;
+    --toggle-h: 26px;
+    --nav-item-h: 36px;
+    --topbar-h: 52px;
+    --nav-w: 236px;
+
+    --stack: 14px;
+    --pad: 15px;
+    --pad-y: 11px;
+    --gutter: 26px;
+    --page-y: 22px;
+    --cell-x: 14px;
+    --row-y: 10px;
+  }
+
+  [data-density="comfortable"] {
+    --fs-2xs: 11.5px;
+    --fs-xs: 12px;
+    --fs-sm: 13px;
+    --fs-md: 14.5px;
+    --fs-lg: 15px;
+    --fs-xl: 18px;
+    --fs-2xl: 25px;
+    --fs-3xl: 29px;
+
+    --row-h: 52px;
+    --control-h: 40px;
+    --control-h-sm: 34px;
+    --chip-h: 26px;
+    --toggle-h: 32px;
+    --nav-item-h: 42px;
+    --topbar-h: 62px;
+    --nav-w: 248px;
+
+    --stack: 20px;
+    --pad: 20px;
+    --pad-y: 15px;
+    --gutter: 32px;
+    --page-y: 28px;
+    --cell-x: 16px;
+    --row-y: 14px;
+  }
+
+  /* ---------- 6. original: HIS-frontend as it is today ----------
+     A reference reproduction for side-by-side comparison, NOT a sanctioned
+     theme. To look like today's app it deliberately breaks three rules:
+     it recolours clinical state, it changes shape and type, and it fixes
+     one density. Its light contrast failures are kept on purpose (noted
+     inline). The dark version below (6b) is designed, not reproduced.
+
+     Read from HIS-frontend @ 8a3fdaeb9 (2026-10-14): src/styles/globals.css,
+     components/common/appSidebar, components/common/topNav, components/ui. */
+  [data-theme="original"] {
+    color-scheme: light;
+
+    /* canvas #f8f7fa holding white cards; the bluish gray scale is the neutral identity */
+    --bg-base: #f8f7fa;
+    --bg: #f8f7fa;
+    --surface: #ffffff;
+    --surface-2: #f2f3fa; /* gray-50 */
+    --input-bg: #ffffff;
+    --thead-bg: #e7e9f5; /* gray-100: the filled table header */
+    --ink: #34343c; /* gray-900 */
+    --ink-2: #565861; /* gray-700 */
+    --ink-3: #797b88; /* gray-500 — 4.2:1 on white, below AA */
+    --line: #cacad9; /* gray-200: rules, tabs, outline buttons */
+    --line-2: #cacad9; /* table row rules */
+    --row-hover: #fafafa;
+    --control-line: #cacad9; /* gray-200 input border — 1.6:1 */
+    --overlay-shadow: 0 -4px 12px rgb(0 0 0 / 0.1);
+    /* white rounded-[15px] page cards: no border, no shadow */
+    --card-shadow: 0 0 #0000;
+    --card-line: transparent;
+    --heading-ink: #315090; /* titles and the patient name are main-blue */
+    --thead-ink: #565861; /* gray-700, 14px, regular */
+    --thead-fs: 14px;
+    --thead-weight: 400;
+    --thead-h: 40px;
+    --cell-ink: #797b88; /* gray-500 body cells */
+
+    /* status colours are the brand hues on hard-coded tints */
+    --critical: #de4949; /* main-red — 4.1:1 */
+    --critical-soft: #ffd9d9;
+    --critical-line: #f3c2c2;
+    --critical-solid: #de4949;
+    --critical-solid-ink: #ffffff;
+    --caution: #ec8038; /* main-orange — 2.7:1 */
+    --caution-soft: #ffedcd;
+    --caution-line: #f5cda9;
+    --stable: #25b877; /* main-green — 2.6:1 */
+    --stable-soft: #e4f7ef;
+    --stable-line: #a9dec6;
+    --info: #315090;
+    --info-soft: #dee5f6;
+    --info-line: #b9c7e6;
+
+    --r-ctl: 8px; /* rounded-md, every control */
+    --r-card: 15px; /* rounded-[15px] page cards */
+    --r-chip: 10px; /* rounded-[10px] tags */
+
+    /* brand blue for identity and active state; the primary ACTION is the
+       orange "auth" button (174 uses) — white on it is 2.7:1 */
+    --brand: #315090;
+    --brand-ink: #ffffff;
+    --brand-text: #315090;
+    --accent: #ec8038;
+    --accent-hover: #ee8d4c;
+    --accent-ink: #ffffff;
+    --accent-soft: #dee5f6; /* pale-blue selected tint */
+    --accent-line: #b9c7e6;
+    --accent-text: #315090;
+    --focus: #a1a1a1; /* shadcn neutral ring */
+
+    /* top nav: no bar — a main-blue title on the canvas, white icon tiles */
+    --chrome-bg: #f8f7fa;
+    --chrome-ink: #315090;
+    --chrome-ink-dim: #797b88;
+    --chrome-line: transparent;
+    --chrome-icon-bg: #ffffff;
+    --chrome-icon-line: transparent;
+    --chrome-icon-ink: #315090;
+    --chrome-field-bg: #ffffff;
+    --chrome-field-line: #cacad9;
+    --chrome-field-ink: #cacad9; /* placeholder is gray-200 */
+    --chrome-focus: #a1a1a1;
+    --chrome-icon-size: 48px; /* white 48px tiles, 16px radius, shadow-sm */
+    --chrome-icon-radius: 16px;
+    --chrome-icon-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    --mark-bg: #ffffff;
+    --mark-ink: #5a67ba;
+    --mark-radius: 9999px; /* 36px round logo */
+    --mark-size: 36px;
+
+    /* sidebar: a navy gradient, white text, white 20% for hover AND active, no marker */
+    --nav-bg: #2a4274;
+    --nav-image: linear-gradient(to bottom, #243b6d, #30487b);
+    --nav-line: rgb(255 255 255 / 0.12);
+    --nav-ink: #ffffff;
+    --nav-ink-strong: #ffffff;
+    --nav-ink-dim: rgb(255 255 255 / 0.7);
+    --nav-hover: rgb(255 255 255 / 0.2);
+    --nav-active-bg: rgb(255 255 255 / 0.2);
+    --nav-active-ink: #ffffff;
+    --nav-marker: transparent;
+    --nav-foot-bg: rgb(255 255 255 / 0.1);
+    --nav-focus: #a1a1a1;
+    --nav-head-bg: transparent;
+    --nav-head-ink: #ffffff;
+    --nav-head-ink-dim: #868899; /* gray-400 */
+    --nav-head-line: transparent;
+    --nav-head-hover: rgb(255 255 255 / 0.2);
+    --nav-head-focus: #a1a1a1;
+    --nav-radius: 10px;
+    --nav-fs: 15px;
+    --nav-active-weight: 500;
+
+    /* steps: the current one is solid main-blue, a done one main-green */
+    --step-current-bg: #315090;
+    --step-current-ink: #ffffff;
+    --step-done-bg: #25b877;
+    --step-done-ink: #ffffff;
+
+    /* one density: 40px controls, 14px body, 256px sidebar */
+    --fs-2xs: 11px;
+    --fs-xs: 12px;
+    --fs-sm: 13px;
+    --fs-md: 14px;
+    --fs-lg: 15px;
+    --fs-xl: 18px;
+    --fs-2xl: 24px;
+    --fs-3xl: 28px;
+    --row-h: 40px;
+    --control-h: 40px;
+    --control-h-sm: 32px;
+    --chip-h: 24px;
+    --toggle-h: 32px;
+    --nav-item-h: 38px;
+    --topbar-h: 64px;
+    --nav-w: 256px;
+    --stack: 16px;
+    --pad: 20px;
+    --pad-y: 14px;
+    --gutter: 24px;
+    --page-y: 24px;
+    --cell-x: 16px;
+    --row-y: 12px;
+  }
+
+  /* ---------- 6b. original in dark — DESIGNED, not reproduced ----------
+     HIS has no dark mode (its .dark block is never switched on), so this is
+     a proposal built from its own palette: the canvas and the sidebar go
+     deep navy, main-blue is lifted for text, the status hues are lifted to
+     read on navy, and the orange Save button keeps its colour with dark
+     text (6.7:1 — white on it stays at 2.7:1). Shape, type and the single
+     density come from the light block above. Every text pair here is at
+     least 4.5:1 and every control boundary at least 3:1. */
+  @media screen {
+    .dark[data-theme="original"],
+    .dark [data-theme="original"] {
+      color-scheme: dark;
+
+      --bg-base: #0e1422;
+      --bg: #0e1422;
+      --surface: #161e30;
+      --surface-2: #1d2740;
+      --input-bg: #121a2b;
+      --thead-bg: #1d2740;
+      --row-hover: #1a2338;
+      --ink: #e8ebf3;
+      --ink-2: #c3c8d6;
+      --ink-3: #9aa1b4;
+      --line: #2c3753;
+      --line-2: #2c3753;
+      --control-line: #64718f;
+      --overlay-shadow: 0 -4px 16px rgb(0 0 0 / 0.45);
+      --heading-ink: #9db4e4; /* main-blue, lifted */
+      --thead-ink: #c3c8d6;
+      --cell-ink: #9aa1b4;
+
+      --critical: #f07474;
+      --critical-soft: #3a1c22;
+      --critical-line: #6b2f37;
+      --critical-solid: #c43b3b;
+      --critical-solid-ink: #ffffff;
+      --caution: #f0a066;
+      --caution-soft: #3a2618;
+      --caution-line: #6b4626;
+      --stable: #3fcf8e;
+      --stable-soft: #12302a;
+      --stable-line: #1f5a45;
+      --info: #8fa9e0;
+      --info-soft: #1b2747;
+      --info-line: #33467a;
+
+      --brand-text: #9db4e4;
+      --accent: #ec8038; /* the Save orange stays… */
+      --accent-hover: #f0935a;
+      --accent-ink: #0f1520; /* …with dark text */
+      --accent-soft: #1f2c4d;
+      --accent-line: #3b5288;
+      --accent-text: #9db4e4;
+
+      --chrome-bg: #0e1422;
+      --chrome-ink: #9db4e4;
+      --chrome-ink-dim: #9aa1b4;
+      --chrome-icon-bg: #161e30;
+      --chrome-icon-ink: #9db4e4;
+      --chrome-icon-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.4);
+      --chrome-field-bg: #121a2b;
+      --chrome-field-line: #64718f;
+      --chrome-field-ink: #9aa1b4;
+
+      --nav-bg: #131d33;
+      --nav-image: linear-gradient(to bottom, #0f1830, #18264a);
+      --nav-hover: rgb(255 255 255 / 0.12);
+      --nav-active-bg: rgb(255 255 255 / 0.16);
+      --nav-foot-bg: rgb(255 255 255 / 0.06);
+      --nav-head-ink-dim: #a9b0c2;
+      --nav-head-hover: rgb(255 255 255 / 0.12);
+
+      --step-current-bg: #3a5ba6;
+      --step-done-bg: #177a4c;
+    }
+  }
+}

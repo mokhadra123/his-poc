@@ -1,0 +1,21 @@
+{
+  "name": "his-design-system",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "customers/*"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "compose": "node scripts/compose.mjs",
+    "dev": "npm run compose && npm run dev -w @his/showcase",
+    "build": "npm run compose && npm run build -w @his/showcase",
+    "start": "node apps/showcase/.next/standalone/apps/showcase/server.js",
+    "verify:build": "node scripts/verify-build.mjs",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint:tokens": "node scripts/check-tokens.mjs"
+  }
+}

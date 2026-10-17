@@ -1,0 +1,11 @@
+node_modules
+.next
+*.tsbuildinfo
+next-env.d.ts
+.DS_Store
+# written by scripts/compose.mjs for the chosen customer
+apps/showcase/app/(app)/(composed)/
+apps/showcase/lib/products.generated.ts
+apps/showcase/lib/slots.generated.ts
+apps/showcase/app/products.generated.css
+apps/showcase/products.generated.json

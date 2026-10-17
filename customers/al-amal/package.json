@@ -1,0 +1,25 @@
+{
+  "name": "@his/customer-al-amal",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./customer.json": "./customer.json",
+    "./pages": "./src/pages.tsx",
+    "./slots": "./src/slots.tsx"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@his/slots": "*",
+    "@his/ui": "*"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.0",
+    "typescript": "^5.9.0"
+  }
+}
