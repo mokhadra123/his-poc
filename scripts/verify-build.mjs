@@ -17,7 +17,7 @@
  *               when enabled
  */
 import { spawn } from "node:child_process";
-import { cpSync, existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
 const root = new URL("..", import.meta.url).pathname;
@@ -114,8 +114,10 @@ for (const p of products) {
 // 3. runtime: the standalone image is what ships, so run that
 console.log("\n3. runtime (standalone server)");
 const serverDir = join(standalone, "apps/showcase");
-cpSync(join(next, "static"), join(serverDir, ".next/static"), { recursive: true });
-if (existsSync(join(app, "public"))) cpSync(join(app, "public"), join(serverDir, "public"), { recursive: true });
+// The build must ship the browser's files with the server (the showcase's
+// postbuild). This used to copy them itself, which hid that `npm run start`
+// served every page without its CSS and JS.
+check(existsSync(join(serverDir, ".next/static")), "standalone image holds .next/static (CSS, JS)");
 
 const server = spawn(process.execPath, ["server.js"], {
   cwd: serverDir,
@@ -134,6 +136,10 @@ try {
     }
   }
   const dashboard = await (await fetch(`${base}/dashboard`)).text();
+  const assets = [...dashboard.matchAll(/(?:href|src)="(\/_next\/static\/[^"]+\.(?:css|js))"/g)].map((m) => m[1]);
+  const missing = [];
+  for (const asset of assets) if ((await fetch(`${base}${asset}`)).status !== 200) missing.push(asset);
+  check(assets.length > 0 && missing.length === 0, `GET /dashboard's ${assets.length} stylesheets and scripts → ${missing.length ? `${missing.length} missing, e.g. ${missing[0]}` : "all 200"}`);
   for (const p of products) {
     for (const route of p.routes) {
       const res = await fetch(`${base}/${route}`, { redirect: "manual" });

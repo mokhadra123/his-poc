@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev --port 3100",
     "build": "next build",
+    "postbuild": "node ../../scripts/standalone-assets.mjs",
     "start": "next start --port 3100",
     "typecheck": "tsc --noEmit"
   },

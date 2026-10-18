@@ -52,7 +52,12 @@ for (const dir of readdirSync(join(root, "packages"))) {
 
 const wanted = customer.products === "*" ? [...available.keys()] : customer.products;
 const unknown = wanted.filter((id) => !available.has(id));
-if (unknown.length) fail(`customer "${customerId}" lists unknown products: ${unknown.join(", ")}`);
+if (unknown.length) {
+  fail(
+    `customer "${customerId}" lists unknown products: ${unknown.map((id) => JSON.stringify(id)).join(", ")}\n` +
+      `  Products: ${[...available.keys()].join(", ")}`,
+  );
+}
 
 // a customer folder with a package.json has code of its own
 const ownCode = (id) => {
