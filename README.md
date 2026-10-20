@@ -26,7 +26,7 @@ combination is also a shareable link:
 
 | Script | What it does |
 |---|---|
-| `npm run build` | compose the customer in `HIS_CUSTOMER` (default `all`), then build a standalone image |
+| `npm run build` | compose the customer in `HIS_CUSTOMER` (default `all`), then build a standalone image (its postbuild copies `.next/static` and `public` in; Next leaves them out) |
 | `npm run verify:build` | prove the last build holds only that customer's products (see below) |
 | `npm run start` | run the standalone image |
 | `npm run typecheck` | `tsc` for every package |
