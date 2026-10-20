@@ -31,6 +31,8 @@ combination is also a shareable link:
 | `npm run start` | run the standalone image |
 | `npm run typecheck` | `tsc` for every package |
 | `npm run lint:tokens` | fails on hex colours, raw palette classes, physical direction classes and unknown role names |
+| `npm run panel` | the customer panel on http://127.0.0.1:3200 — configure, compose and run a customer ([below](#customer-panel)) |
+| `npm test` | the panel's tests (`node:test`; temporary fixtures, never real customers) |
 
 ## Layout
 
@@ -51,6 +53,7 @@ apps/showcase/               Next.js app that consumes @his/ui
   app/(app)/(composed)/      generated route shells for the composed products
   components/slot.tsx        <Slot>: an outlet a customer can plug into
   lib/not-purchased.ts       what an unpurchased product resolves to
+apps/customer-panel/         local admin panel: customers, products, palette permission, compose & run
 scripts/compose.mjs          writes the customer's routes, nav, @source, config
 scripts/verify-build.mjs     checks a build against its customer
 scripts/check-tokens.mjs     the token guard
@@ -173,6 +176,11 @@ HIS_CUSTOMER=al-amal npm run build   # billing in, pharmacy out
 npm run verify:build
 ```
 
+`node scripts/compose.mjs --check` runs every check and writes nothing;
+`--customer-file <path>` checks (or composes) a draft definition instead of
+`customers/<id>/customer.json`. A failed compose leaves the last good output in
+place: every check runs before anything is written.
+
 | Generated | For |
 |---|---|
 | `app/(app)/(composed)/<route>/page.tsx` | a thin route shell per product route |
@@ -248,6 +256,61 @@ What breaks, and who notices (all four were tried):
 
 The first and last only show up when every customer is built on every pull
 request, which is why customer code lives in this repository.
+
+## Customer panel
+
+A local admin page for the steps above, so nobody has to set `HIS_CUSTOMER` in
+a terminal:
+
+```powershell
+npm install
+npm run panel        # http://127.0.0.1:3200 — answers on this machine only
+```
+
+Pick a customer (or create one), choose its products, decide whether it may
+change its theme palette, **Save**, then **Compose** or **Compose & run**. The
+panel runs `scripts/compose.mjs` with `HIS_CUSTOMER` set, then the showcase's
+`next dev` on port 3100; **Stop** stops it. Output and exit codes are shown.
+
+- **What it edits.** `name`, `products` and `features` in
+  `customers/<id>/customer.json`. `extensions` and any other key are written
+  back as they were (the file is re-written as 2-space JSON). A save is refused
+  unless `compose.mjs --check` accepts the result, so a saved customer composes.
+- **One thing at a time.** compose rewrites `apps/showcase` in place and its
+  `next.config.ts` reads the result only at startup, so there is one
+  composition and at most one showcase. Compose and run are refused while the
+  panel's showcase runs — stop it first — and while something else holds port
+  3100 (a terminal `npm run dev`, say). The panel never stops a process it did
+  not start; that one you stop yourself.
+- **When the panel goes away, so does its showcase** on Windows: Node keeps
+  child processes in the parent's job, so they end with it, even on a hard
+  kill. On macOS/Linux (not tested) a hard-killed panel may leave the showcase
+  running; the next panel then reports port 3100 as taken.
+- **Local only.** It edits files and runs a dev server on this machine. It does
+  not deploy, bill or build images — `npm run build` and `verify:build` stay
+  the way to make and check one.
+
+### Theme palette permission
+
+```json
+"features": { "themePaletteCustomization": true }
+```
+
+Every customer starts on the default palette (`slate`). The flag only decides
+whether its users may change it; missing means `false`. It never assigns a
+palette to a customer.
+
+| | `false` / missing | `true` |
+|---|---|---|
+| `<html data-theme>` | the default; saved `his-theme` / `his-brand` cookies are ignored (kept, not deleted) | the user's choice |
+| theme picker in the review bar | not rendered | shown |
+| `?theme=` / `?brand=` links | removed, no cookie set | set the cookie |
+| `setPref("theme" \| "brand")` | ignored while `<html data-palette="locked">` | applies |
+
+Mode, density, navigation and language stay each user's choice either way.
+compose writes the flag into `CUSTOMER.features` and `products.generated.json`;
+`verify:build` checks the first three rows and the `data-palette` marker against
+the running image, and `npm test` covers `setPref`.
 
 ## Not in this POC
 

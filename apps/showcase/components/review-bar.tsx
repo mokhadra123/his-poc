@@ -18,7 +18,18 @@ const PAGES = [
   { href: "/visit", key: "visit" },
 ] as const;
 
-export function ReviewBar({ prefs, lang, t }: { prefs: Prefs; lang: Lang; t: Dict["review"] }) {
+export function ReviewBar({
+  prefs,
+  lang,
+  t,
+  paletteLocked,
+}: {
+  prefs: Prefs;
+  lang: Lang;
+  t: Dict["review"];
+  /** the customer may not change the palette: no theme group (see lib/features.ts) */
+  paletteLocked: boolean;
+}) {
   // <html> is the source of truth, so the pressed states never go stale
   const theme = usePref("theme", prefs.theme);
   const mode = usePref("mode", prefs.mode);
@@ -52,38 +63,42 @@ export function ReviewBar({ prefs, lang, t }: { prefs: Prefs; lang: Lang; t: Dic
         ))}
       </nav>
 
-      <Group label={t.theme}>
-        {THEMES.map((th) => (
-          <Choice key={th} pressed={theme === th} onClick={() => setPref("theme", th)}>
-            {t.themes[th]}
-          </Choice>
-        ))}
-        {theme === "custom" ? (
-          <>
-            <input
-              type="color"
-              aria-label={t.pickColour}
-              value={brand}
-              onChange={(e) => {
-                setBrand(e.target.value);
-                setPref("brand", e.target.value);
-              }}
-              className="ms-1 size-6 cursor-pointer rounded-ctl border border-surface/30 bg-transparent"
-            />
-            {lowContrast || nearCritical ? (
-              <span role="status" className="ms-1 whitespace-nowrap text-surface/80 dark:text-ink-2">
-                ⚠ {lowContrast ? t.lowContrast : t.nearCritical}
-              </span>
+      {paletteLocked ? null : (
+        <>
+          <Group label={t.theme}>
+            {THEMES.map((th) => (
+              <Choice key={th} pressed={theme === th} onClick={() => setPref("theme", th)}>
+                {t.themes[th]}
+              </Choice>
+            ))}
+            {theme === "custom" ? (
+              <>
+                <input
+                  type="color"
+                  aria-label={t.pickColour}
+                  value={brand}
+                  onChange={(e) => {
+                    setBrand(e.target.value);
+                    setPref("brand", e.target.value);
+                  }}
+                  className="ms-1 size-6 cursor-pointer rounded-ctl border border-surface/30 bg-transparent"
+                />
+                {lowContrast || nearCritical ? (
+                  <span role="status" className="ms-1 whitespace-nowrap text-surface/80 dark:text-ink-2">
+                    ⚠ {lowContrast ? t.lowContrast : t.nearCritical}
+                  </span>
+                ) : null}
+              </>
             ) : null}
-          </>
-        ) : null}
-      </Group>
+          </Group>
 
-      {theme === "original" ? (
-        <span role="status" className="whitespace-nowrap text-surface/80 dark:text-ink-2">
-          ⓘ {t.originalNote}
-        </span>
-      ) : null}
+          {theme === "original" ? (
+            <span role="status" className="whitespace-nowrap text-surface/80 dark:text-ink-2">
+              ⓘ {t.originalNote}
+            </span>
+          ) : null}
+        </>
+      )}
 
       <Group label={t.mode}>
         {MODES.map((m) => (

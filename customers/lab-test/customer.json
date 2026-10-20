@@ -1,0 +1,13 @@
+{
+  "id": "lab-test",
+  "name": {
+    "en": "Lab Test",
+    "ar": "تجربة"
+  },
+  "products": [
+    "billing"
+  ],
+  "features": {
+    "themePaletteCustomization": true
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "med-light",
+  "name": {
+    "en": "Med-Light Hospital",
+    "ar": "مستشفى ميد-لايت"
+  },
+  "products": [
+    "billing",
+    "pharmacy"
+  ],
+  "features": {
+    "themePaletteCustomization": false
+  }
+}

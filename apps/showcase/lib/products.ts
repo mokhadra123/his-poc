@@ -13,3 +13,13 @@ export type ProductManifest = {
   nav: { href: string; icon: string; section: string; label: L }[];
   routes: { path: string; export: string; title: L }[];
 };
+
+/** The customer a build is composed for, and what it may change in the app (customer.json → "features"). */
+export type ComposedCustomer = {
+  id: string;
+  name: L;
+  features: {
+    /** false (the default): the app keeps the default palette and offers no theme switch */
+    themePaletteCustomization: boolean;
+  };
+};

@@ -1,0 +1,13 @@
+{
+  "id": "preview-test",
+  "name": {
+    "en": "preview-test",
+    "ar": "preview-test"
+  },
+  "products": [
+    "pharmacy"
+  ],
+  "features": {
+    "themePaletteCustomization": true
+  }
+}

@@ -1,5 +1,6 @@
-import { PREF_COOKIES, parsePref, type Prefs } from "@his/ui/theme";
+import { isPalettePref, PREF_COOKIES, parsePref, type Prefs } from "@his/ui/theme";
 import { type NextRequest, NextResponse } from "next/server";
+import { PALETTE_LOCKED } from "./lib/features";
 import { LANG_COOKIE, LANGS, type Lang } from "./lib/lang";
 
 /*
@@ -8,6 +9,8 @@ import { LANG_COOKIE, LANGS, type Lang } from "./lib/lang";
  * Valid query values become cookies, invalid ones are dropped, then we
  * redirect to the clean URL (other query params are kept), so the server
  * renders the right <html> attributes on the very first paint.
+ * A customer without the palette permission (lib/features.ts) gets the clean
+ * URL for ?theme= and ?brand= too, but no cookie.
  */
 const PREF_KEYS = Object.keys(PREF_COOKIES) as (keyof Prefs)[];
 
@@ -23,6 +26,7 @@ export function proxy(request: NextRequest) {
     if (raw === null) continue;
     touched = true;
     url.searchParams.delete(key);
+    if (PALETTE_LOCKED && isPalettePref(key)) continue;
     if (key === "brand" && !raw.startsWith("#")) raw = `#${raw}`;
     const value = parsePref(key, raw);
     if (value !== undefined) cookies.push([PREF_COOKIES[key], value]);

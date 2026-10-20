@@ -10,6 +10,8 @@ import type { CSSProperties } from "react";
  *   data-density  per user       compact | comfortable
  *   data-nav      per user       expanded | collapsed
  *   data-rail     per user       open | collapsed
+ *   data-palette  per customer   locked — the customer may not change the
+ *                                palette (theme + brand), see lockPalette()
  *
  * The custom brand is always on <html> as --brand-custom (+ its derived
  * ink and text colours), whatever the active theme, so previews of the
@@ -85,6 +87,25 @@ export function readPrefs(get: (name: string) => string | undefined): Prefs {
     rail: read("rail"),
     brand: read("brand"),
   };
+}
+
+/* ---------- palette permission ---------- */
+
+/**
+ * The prefs a hospital's palette is made of. A customer that may not change
+ * its palette always gets the defaults for these; every other pref (mode,
+ * density, nav, rail) stays the user's own.
+ */
+export const PALETTE_PREFS = ["theme", "brand"] as const satisfies readonly (keyof Prefs)[];
+export type PalettePref = (typeof PALETTE_PREFS)[number];
+
+export function isPalettePref(key: keyof Prefs): key is PalettePref {
+  return (PALETTE_PREFS as readonly string[]).includes(key);
+}
+
+/** The prefs with the palette back at its defaults. Saved palette cookies are ignored, not deleted. */
+export function lockPalette(prefs: Prefs): Prefs {
+  return { ...prefs, theme: DEFAULT_PREFS.theme, brand: DEFAULT_PREFS.brand };
 }
 
 /* ---------- brand-derived colours ---------- */
@@ -205,23 +226,30 @@ function brandVars(brand: string) {
   };
 }
 
-/** Attributes for the server-rendered <html> element. */
-export function htmlThemeProps(prefs: Prefs) {
+/**
+ * Attributes for the server-rendered <html> element. With `paletteLocked`
+ * (pass prefs through lockPalette() too) <html> says so, and setPref() then
+ * refuses to change the palette.
+ */
+export function htmlThemeProps(prefs: Prefs, { paletteLocked = false }: { paletteLocked?: boolean } = {}) {
   return {
     className: prefs.mode === "dark" ? "dark" : undefined,
     "data-theme": prefs.theme,
     "data-density": prefs.density,
     "data-nav": prefs.nav,
     "data-rail": prefs.rail,
+    "data-palette": paletteLocked ? "locked" : undefined,
     style: brandVars(prefs.brand) as CSSProperties,
   };
 }
 
 /**
  * Client side: apply one preference immediately and remember it.
- * Only touches <html>, so nothing re-renders. Invalid values are ignored.
+ * Only touches <html>, so nothing re-renders. Invalid values are ignored,
+ * and so is a palette change while <html data-palette="locked">.
  */
 export function setPref<K extends keyof Prefs>(key: K, raw: Prefs[K]) {
+  if (isPalettePref(key) && document.documentElement.dataset.palette === "locked") return;
   const value = parsePref(key, raw);
   if (value === undefined) return;
   const root = document.documentElement;

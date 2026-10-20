@@ -15,12 +15,16 @@
  *               enabled and 404 when not, the sidebar links to them only when
  *               enabled, and the outlets it plugs into show its content only
  *               when enabled
+ *   4. palette  a saved theme cookie, the theme picker and ?theme= links work
+ *               only when the customer may change its palette
  */
 import { spawn } from "node:child_process";
 import { cpSync, existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const root = new URL("..", import.meta.url).pathname;
+// const root = new URL("..", import.meta.url).pathname;
+const root = fileURLToPath(new URL("../", import.meta.url));
 const app = join(root, "apps/showcase");
 const next = join(app, ".next");
 const standalone = join(next, "standalone");
@@ -82,8 +86,9 @@ console.log(`\nverify build for customer "${composed.customer}"`);
 
 // 1. source: only generated files may import a product
 console.log("\n1. source");
-const generated = /\/\(composed\)\/|\.generated\./;
-const appFiles = [...walk(app, (f) => /\/(node_modules|\.next)$/.test(f))].filter(
+// [\\/]: walk() yields the platform's separator
+const generated = /[\\/]\(composed\)[\\/]|\.generated\./;
+const appFiles = [...walk(app, (f) => /[\\/](node_modules|\.next)$/.test(f))].filter(
   (f) => /\.(tsx?|css)$/.test(f) && !generated.test(f),
 );
 for (const p of products) {
@@ -153,6 +158,21 @@ try {
       check(shown === p.enabled, `${p.id.padEnd(18)} outlet ${outlet} on ${page} shows it: ${shown ? "yes" : "no"}`);
     }
   }
+
+  // 4. palette: missing in an older composition counts as "may not change"
+  const changeable = composed.features?.themePaletteCustomization === true;
+  console.log(`\n4. palette (${changeable ? "customer may change it" : "default only"})`);
+  const saved = await (await fetch(`${base}/dashboard`, { headers: { cookie: "his-theme=pine" } })).text();
+  const html = saved.match(/<html[^>]*>/)?.[0] ?? "";
+  const theme = html.match(/\sdata-theme="([^"]*)"/)?.[1];
+  check((theme === "pine") === changeable, `saved theme cookie "pine" → data-theme="${theme}"`);
+  const locked = html.includes(' data-palette="locked"');
+  check(locked === !changeable, `<html data-palette="locked">: ${locked ? "yes" : "no"}`);
+  const picker = saved.includes('role="group" aria-label="Theme"');
+  check(picker === changeable, `theme picker in the review bar: ${picker ? "yes" : "no"}`);
+  const link = await fetch(`${base}/dashboard?theme=ink`, { redirect: "manual" });
+  const cookie = (link.headers.get("set-cookie") ?? "").includes("his-theme=ink");
+  check(cookie === changeable, `?theme=ink → ${link.status}, sets the theme cookie: ${cookie ? "yes" : "no"}`);
 } finally {
   server.kill();
 }
