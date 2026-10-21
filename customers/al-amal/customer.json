@@ -1,8 +1,8 @@
 {
   "id": "al-amal",
   "name": {
-    "en": "Al-Amal Hospital2",
-    "ar": "مستشفى الأمل2"
+    "en": "Al-Amal Hospital",
+    "ar": "مستشفى الأمل"
   },
   "products": [
     "billing"
