@@ -2,16 +2,12 @@
  * What the panel's server hands to the browser. Plain data only — no Node
  * imports — so client components can import these types.
  */
+import type { ThemePolicy } from "@his/ui/theme";
 
 export type Localized = { en: string; ar: string };
 
 /** "*" is every product in packages/, including ones added later */
 export type ProductSelection = "*" | string[];
-
-export type CustomerFeatures = {
-  /** false (also when missing): the app keeps the default palette */
-  themePaletteCustomization: boolean;
-};
 
 /** A product, from packages/<dir>/his.product.json */
 export type Product = {
@@ -30,7 +26,10 @@ export type CustomerConfig = {
   id: string;
   name: Localized;
   products: ProductSelection;
-  features: CustomerFeatures;
+  /** its themes — set in the control app, shown, never edited by the panel */
+  theme: ThemePolicy;
+  /** read from the older features.themePaletteCustomization (customer.json has no "theme" yet) */
+  legacyTheme: boolean;
   /** what the customer adds itself — shown, never edited by the panel */
   extensions: { routes: string[]; nav: number; slots: string[] };
   /** the package of the customer's own code (customers/<id>/package.json) */
@@ -43,7 +42,7 @@ export type CustomerEntry =
   | { id: string; config: null; problem: string };
 
 /** The part of customer.json the panel edits */
-export type CustomerEdit = { name: Localized; products: ProductSelection; features: CustomerFeatures };
+export type CustomerEdit = { name: Localized; products: ProductSelection };
 
 export type RunAction = "compose" | "start" | "stop";
 
@@ -52,8 +51,8 @@ export type RunStatus = {
   busy: RunAction | null;
   /** the showcase this panel started */
   server: { customerId: string; url: string; ready: boolean } | null;
-  /** what apps/showcase is composed for right now (products.generated.json) */
-  composed: { customerId: string; themePaletteCustomization: boolean } | null;
+  /** what apps/showcase is composed for right now (products.generated.json); theme null when it cannot be read */
+  composed: { customerId: string; theme: ThemePolicy | null } | null;
   /** something this panel did not start listens on the showcase port */
   portInUse: boolean;
   port: number;

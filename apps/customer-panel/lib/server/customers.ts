@@ -1,13 +1,16 @@
 /*
  * Customers: every customers/<id>/customer.json, the folders compose reads.
- * The panel edits name, products and features only; everything else in the
- * file — extensions, keys it does not know — is written back as it was read.
+ * The panel edits name and products only; everything else in the file —
+ * theme and features (the control app's), extensions, keys it does not
+ * know — is written back as it was read.
  */
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { DEFAULT_PREFS, type ThemePolicy } from "@his/ui/theme";
 import type { CustomerConfig, CustomerEdit, CustomerEntry, Localized, ProductCatalog } from "../types.ts";
 import { checkSelection, isSelection } from "./products.ts";
 import { checkCustomerId, customerDir, isLocalized, isRecord, PanelError } from "./repo.ts";
+import { readTheme } from "./theme.ts";
 
 export type Checked<T> = { ok: true; value: T } | { ok: false; errors: string[] };
 
@@ -45,17 +48,20 @@ function parseConfig(id: string, raw: unknown, own: string | null): CustomerConf
   if (raw.id !== id) return `its "id" is ${JSON.stringify(raw.id)}, but the folder is "${id}"`;
   if (!isLocalized(raw.name)) return `"name" needs "en" and "ar"`;
   if (!isSelection(raw.products)) return `"products" must be "*" or a list of product ids`;
-  // missing features, or a missing flag, mean "not allowed"
+  // compose refuses these too, so the customer could not be saved
   const features = raw.features ?? {};
   if (!isRecord(features)) return `"features" must be an object`;
   const palette = features.themePaletteCustomization ?? false;
   if (typeof palette !== "boolean") return `"features.themePaletteCustomization" must be true or false`;
+  const theme = readTheme(raw);
+  if (typeof theme === "string") return `${theme} — fix it in the control app`;
   const ext = isRecord(raw.extensions) ? raw.extensions : {};
   return {
     id,
     name: raw.name,
     products: raw.products,
-    features: { themePaletteCustomization: palette },
+    theme: theme.theme,
+    legacyTheme: theme.legacy,
     extensions: {
       routes: Array.isArray(ext.routes)
         ? ext.routes.flatMap((r: unknown) => (isRecord(r) && typeof r.path === "string" ? [r.path] : []))
@@ -109,24 +115,17 @@ export function parseEdit(input: unknown, catalog: ProductCatalog): Checked<Cust
   const name = readName(input.name, errors);
   const products = input.products;
   errors.push(...checkSelection(products, catalog));
-  const palette = isRecord(input.features) ? input.features.themePaletteCustomization : undefined;
-  if (typeof palette !== "boolean") errors.push(`"Allow theme palette changes" must be on or off`);
-  if (errors.length > 0 || !isSelection(products) || typeof palette !== "boolean") return { ok: false, errors };
-  return { ok: true, value: { name, products, features: { themePaletteCustomization: palette } } };
+  // anything else the browser sends (an older page's "features", say) is ignored: themes are the control app's
+  if (errors.length > 0 || !isSelection(products)) return { ok: false, errors };
+  return { ok: true, value: { name, products } };
 }
 
-/** customer.json as it would be saved: the edited fields replaced, the rest re-read from disk and kept. */
+/** customer.json as it would be saved: name and products replaced, the rest re-read from disk and kept. */
 export function buildDraft(root: string, id: string, edit: CustomerEdit): Record<string, unknown> {
   getCustomer(root, id);
   const raw: unknown = JSON.parse(readFileSync(join(customerDir(root, id), "customer.json"), "utf8"));
   if (!isRecord(raw)) throw new PanelError(`customers/${id}/customer.json is not an object`);
-  const features = isRecord(raw.features) ? raw.features : {};
-  return {
-    ...raw,
-    name: edit.name,
-    products: edit.products,
-    features: { ...features, themePaletteCustomization: edit.features.themePaletteCustomization },
-  };
+  return { ...raw, name: edit.name, products: edit.products };
 }
 
 /** Replace customer.json in one step, so a compose reading it never sees half a file. */
@@ -142,7 +141,10 @@ export function writeCustomer(root: string, id: string, draft: Record<string, un
   }
 }
 
-/** A new customer with no products and the default palette. Never overwrites a folder. */
+/** The default theme, alone — what the control app gives a new customer too. */
+const DEFAULT_THEME: ThemePolicy = { default: DEFAULT_PREFS.theme, allowed: [DEFAULT_PREFS.theme], brand: null };
+
+/** A new customer with no products and the default theme. Never overwrites a folder. */
 export function createCustomer(root: string, input: unknown): CustomerConfig {
   if (!isRecord(input)) throw new PanelError("Nothing to create");
   const id = input.id;
@@ -161,7 +163,7 @@ export function createCustomer(root: string, input: unknown): CustomerConfig {
   } catch {
     throw new PanelError(`customers/${id} could not be created — does it exist already?`);
   }
-  const config = { id, name, products: [], features: { themePaletteCustomization: false } };
+  const config = { id, name, products: [], theme: DEFAULT_THEME };
   writeFileSync(join(dir, "customer.json"), `${JSON.stringify(config, null, 2)}\n`, { flag: "wx" });
   return getCustomer(root, id);
 }

@@ -34,40 +34,6 @@ export function TextField({
   );
 }
 
-/** An on/off switch; name it with `labelledBy`, explain it with `describedBy`. */
-export function Switch({
-  checked,
-  onChange,
-  labelledBy,
-  describedBy,
-}: {
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-  labelledBy: string;
-  describedBy?: string;
-}) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      aria-labelledby={labelledBy}
-      aria-describedby={describedBy}
-      onClick={() => onChange(!checked)}
-      className={cn(
-        "group inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border transition-colors",
-        "border-control-line bg-surface-2 aria-checked:border-accent-edge aria-checked:bg-accent",
-        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
-      )}
-    >
-      <span
-        aria-hidden
-        className="ms-0.5 size-4.5 rounded-full bg-ink-3 shadow-card transition-[margin] group-aria-checked:ms-5.5 group-aria-checked:bg-accent-ink"
-      />
-    </button>
-  );
-}
-
 /**
  * A message box. Operations stay neutral in this design system (colour is for
  * clinical state), so a problem is told by its icon, weight and border.

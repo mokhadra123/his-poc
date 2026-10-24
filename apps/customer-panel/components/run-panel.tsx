@@ -4,6 +4,7 @@ import { Button, Panel, PanelBody, PanelHeader, Status } from "@his/ui";
 import { ExternalLink, Layers, Play, Square } from "lucide-react";
 import { useState, useTransition } from "react";
 import { runAction } from "@/app/actions";
+import { themeSummary } from "@/lib/themes";
 import type { ActionResult, RunAction, RunStatus } from "@/lib/types";
 import { Notice } from "./fields";
 
@@ -56,8 +57,8 @@ export function RunPanel({
           <dd>
             {composed ? (
               <>
-                <code className="font-mono">{composed.customerId}</code> · palette{" "}
-                {composed.themePaletteCustomization ? "changeable" : "default only"}
+                <code className="font-mono">{composed.customerId}</code> · theme{" "}
+                {composed.theme ? themeSummary(composed.theme) : "unreadable"}
               </>
             ) : (
               "nothing yet"

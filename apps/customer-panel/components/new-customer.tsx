@@ -52,7 +52,7 @@ export function NewCustomer({ onClose }: { onClose: () => void }) {
         dir="rtl"
         lang="ar"
       />
-      <p className="text-xs text-ink-3">Starts with no products and the default palette.</p>
+      <p className="text-xs text-ink-3">Starts with no products and the default theme only (Slate).</p>
       {error ? <Notice tone="problem" title={error} /> : null}
       <div className="flex gap-2">
         <Button tone="primary" type="submit" disabled={pending}>

@@ -15,6 +15,7 @@ import {
 } from "@his/ui";
 import { readPrefs } from "@his/ui/theme";
 import { cookies } from "next/headers";
+import { ReadOnlyNote, WriteButton } from "@/components/licence-client";
 import { MarkChip, Page, PageTopbar } from "@/components/page-parts";
 import { Slot } from "@/components/slot";
 import { ExamPanel, RailToggle } from "@/components/visit-client";
@@ -79,11 +80,13 @@ export default async function VisitPage() {
           <section>
             <ExamPanel t={v.exam} />
             <ActionBar>
-              <span className="min-w-0 truncate text-sm text-ink-3">{v.saved}</span>
-              <Button>{v.saveDraft}</Button>
-              <Button tone="primary" data-primary>
+              <ReadOnlyNote note={t.licence.readOnlyNote} className="min-w-0 truncate text-sm text-ink-3">
+                {v.saved}
+              </ReadOnlyNote>
+              <WriteButton>{v.saveDraft}</WriteButton>
+              <WriteButton tone="primary" data-primary>
                 {v.saveNext}
-              </Button>
+              </WriteButton>
             </ActionBar>
           </section>
 
@@ -115,7 +118,7 @@ export default async function VisitPage() {
             </Panel>
 
             <Panel>
-              <PanelHeader title={v.medications} actions={<Button size="sm">{v.add}</Button>} />
+              <PanelHeader title={v.medications} actions={<WriteButton size="sm">{v.add}</WriteButton>} />
               <PanelBody className="py-1">
                 {visit.medications.map((m) => (
                   <div key={m.name.en} className="border-b border-line-2 py-2.5 last:border-b-0">

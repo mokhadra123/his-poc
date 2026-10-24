@@ -12,6 +12,9 @@ import type { CSSProperties } from "react";
  *   data-rail     per user       open | collapsed
  *   data-palette  per customer   locked — the customer may not change the
  *                                palette (theme + brand), see lockPalette()
+ *   data-themes   per customer   the themes its users may switch between
+ *                                (ThemePolicy, set in the control app)
+ *   data-brand    per customer   locked — the custom theme's colour is the hospital's
  *
  * The custom brand is always on <html> as --brand-custom (+ its derived
  * ink and text colours), whatever the active theme, so previews of the
@@ -76,9 +79,12 @@ export function parsePref<K extends keyof Prefs>(key: K, raw: string | null | un
   return (allowed.includes(raw) ? raw : undefined) as Prefs[K] | undefined;
 }
 
-/** Validate raw cookie values; anything unknown falls back to the default. */
-export function readPrefs(get: (name: string) => string | undefined): Prefs {
-  const read = <K extends keyof Prefs>(key: K) => parsePref(key, get(PREF_COOKIES[key])) ?? DEFAULT_PREFS[key];
+/**
+ * Validate raw cookie values; anything missing or unknown falls back to the
+ * default — the design system's, or a customer's (see themeDefaults()).
+ */
+export function readPrefs(get: (name: string) => string | undefined, defaults: Prefs = DEFAULT_PREFS): Prefs {
+  const read = <K extends keyof Prefs>(key: K) => parsePref(key, get(PREF_COOKIES[key])) ?? defaults[key];
   return {
     theme: read("theme"),
     mode: read("mode"),
@@ -106,6 +112,43 @@ export function isPalettePref(key: keyof Prefs): key is PalettePref {
 /** The prefs with the palette back at its defaults. Saved palette cookies are ignored, not deleted. */
 export function lockPalette(prefs: Prefs): Prefs {
   return { ...prefs, theme: DEFAULT_PREFS.theme, brand: DEFAULT_PREFS.brand };
+}
+
+/* ---------- a customer's themes ---------- */
+
+/**
+ * Which themes a customer's users may use (customer.json → "theme", set in
+ * the control app): one theme is a fixed look, several let each user switch
+ * between them. `brand` is the hospital's own colour for the custom theme;
+ * null lets users pick it.
+ */
+export type ThemePolicy = {
+  default: Theme;
+  allowed: Theme[];
+  brand: string | null;
+};
+
+/** Every theme, starting on the default one: what the "all" developer build gets. */
+export const OPEN_THEME_POLICY: ThemePolicy = { default: DEFAULT_PREFS.theme, allowed: [...THEMES], brand: null };
+
+/** The defaults for a customer: a first visit (no saved theme) starts on the customer's default theme and colour. */
+export function themeDefaults(policy: ThemePolicy): Prefs {
+  return { ...DEFAULT_PREFS, theme: policy.default, brand: policy.brand ?? DEFAULT_PREFS.brand };
+}
+
+/** The prefs inside a policy: a saved theme the customer does not have falls back to its default (the cookie is kept). */
+export function applyThemePolicy(prefs: Prefs, policy: ThemePolicy): Prefs {
+  return {
+    ...prefs,
+    theme: policy.allowed.includes(prefs.theme) ? prefs.theme : policy.default,
+    brand: policy.brand ?? prefs.brand,
+  };
+}
+
+/** What a user may still change: switch themes (more than one) and/or pick the custom colour. */
+export function themeChoices(policy: ThemePolicy) {
+  const pickBrand = policy.brand === null && policy.allowed.includes("custom");
+  return { themes: policy.allowed.length > 1 ? policy.allowed : [], pickBrand };
 }
 
 /* ---------- brand-derived colours ---------- */
@@ -231,14 +274,23 @@ function brandVars(brand: string) {
  * (pass prefs through lockPalette() too) <html> says so, and setPref() then
  * refuses to change the palette.
  */
-export function htmlThemeProps(prefs: Prefs, { paletteLocked = false }: { paletteLocked?: boolean } = {}) {
+export function htmlThemeProps(
+  prefs: Prefs,
+  { paletteLocked = false, policy }: { paletteLocked?: boolean; policy?: ThemePolicy } = {},
+) {
+  // a policy that leaves nothing to choose locks the palette outright
+  const choices = policy ? themeChoices(policy) : null;
+  const locked = paletteLocked || (choices !== null && choices.themes.length === 0 && !choices.pickBrand);
   return {
     className: prefs.mode === "dark" ? "dark" : undefined,
     "data-theme": prefs.theme,
     "data-density": prefs.density,
     "data-nav": prefs.nav,
     "data-rail": prefs.rail,
-    "data-palette": paletteLocked ? "locked" : undefined,
+    "data-palette": locked ? "locked" : undefined,
+    // setPref() reads these: only the customer's themes, and no colour of one's own once the hospital has one
+    "data-themes": policy && policy.allowed.length < THEMES.length ? policy.allowed.join(" ") : undefined,
+    "data-brand": policy?.brand ? "locked" : undefined,
     style: brandVars(prefs.brand) as CSSProperties,
   };
 }
@@ -253,6 +305,9 @@ export function setPref<K extends keyof Prefs>(key: K, raw: Prefs[K]) {
   const value = parsePref(key, raw);
   if (value === undefined) return;
   const root = document.documentElement;
+  // the customer's theme policy (htmlThemeProps): only its themes, and its own brand colour
+  if (key === "theme" && root.dataset.themes && !root.dataset.themes.split(" ").includes(value as string)) return;
+  if (key === "brand" && root.dataset.brand === "locked") return;
   if (key === "mode") {
     root.classList.toggle("dark", value === "dark");
   } else if (key === "brand") {

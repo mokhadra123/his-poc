@@ -1,0 +1,11 @@
+{
+  "id": "al-noor",
+  "name": {
+    "en": "Al-Noor Clinic",
+    "ar": "عيادة النور"
+  },
+  "products": [],
+  "features": {
+    "themePaletteCustomization": false
+  }
+}

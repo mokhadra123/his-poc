@@ -148,6 +148,20 @@ describe("runner", () => {
     }
   });
 
+  it("reports the composed customer's theme, or an older composition's palette flag", async () => {
+    const GENERATED = "apps/showcase/products.generated.json";
+    assert.equal((await runner.status()).composed, null, "nothing composed yet");
+    repo.write(GENERATED, { customer: "two", features: { themePaletteCustomization: true }, theme: { default: "pine", allowed: ["pine", "custom"], brand: "#1f6f8b" } });
+    assert.deepEqual((await runner.status()).composed, {
+      customerId: "two",
+      theme: { default: "pine", allowed: ["pine", "custom"], brand: "#1f6f8b" },
+    });
+    repo.write(GENERATED, { customer: "old", features: { themePaletteCustomization: true } });
+    assert.deepEqual((await runner.status()).composed?.theme?.allowed, ["slate", "ink", "pine", "graphite", "custom", "original"]);
+    repo.write(GENERATED, { customer: "older", features: {} });
+    assert.deepEqual((await runner.status()).composed?.theme, { default: "slate", allowed: ["slate"], brand: null });
+  });
+
   it("uses the showcase's own dev port", () => {
     const pkg = JSON.parse(readFileSync(join(REAL_ROOT, "apps/showcase/package.json"), "utf8"));
     assert.match(pkg.scripts.dev, new RegExp(`--port ${SHOWCASE_PORT}\\b`));

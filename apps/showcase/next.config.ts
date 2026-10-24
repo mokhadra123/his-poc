@@ -20,9 +20,10 @@ const notPurchased = Object.fromEntries(
 const nextConfig: NextConfig = {
   // the deployable unit: only the files the build actually imports
   output: "standalone",
-  // TypeScript-source packages Next compiles like app code — the design system
-  // plus the composed products; a product the customer lacks is not listed
-  transpilePackages: ["@his/ui", ...composed.enabled.map((p) => p.package)],
+  // TypeScript-source packages Next compiles like app code — the design system,
+  // the licence contract, plus the composed products; a product the customer
+  // lacks is not listed
+  transpilePackages: ["@his/ui", "@his/licence", ...composed.enabled.map((p) => p.package)],
   turbopack: { root: path.join(__dirname, "../.."), resolveAlias: notPurchased },
   outputFileTracingRoot: path.join(__dirname, "../.."),
 };

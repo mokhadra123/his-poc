@@ -8,6 +8,7 @@ import {
   Building,
   CalendarDays,
   FileText,
+  KeyRound,
   LayoutGrid,
   type LucideIcon,
   Palette,
@@ -47,6 +48,7 @@ const CORE: { key: SectionKey; items: Item[] }[] = [
     items: [
       { href: "#", icon: Building, label: "facility" },
       { href: "#", icon: SlidersHorizontal, label: "settings" },
+      { href: "/licence", icon: KeyRound, label: "licence" },
     ],
   },
   { key: "system", items: [{ href: "/", icon: Palette, label: "designSystem" }] },
@@ -54,24 +56,43 @@ const CORE: { key: SectionKey; items: Item[] }[] = [
 
 const ICONS: Record<string, LucideIcon> = { receipt: ReceiptText, pill: Pill, report: FileText };
 
-/* products the customer bought, and the customer's own pages, merged into their sections (scripts/compose.mjs) */
-const SECTIONS = CORE.map((section) => ({
-  ...section,
-  items: [
-    ...section.items,
-    ...PRODUCTS.flatMap((p) =>
-      p.nav
-        .filter((n) => n.section === section.key)
-        .map((n): Item => ({ href: n.href, icon: ICONS[n.icon] ?? Palette, label: n.label })),
-    ),
-  ],
-})).filter((section) => section.items.length > 0);
+/*
+ * products the customer bought, and the customer's own pages, merged into
+ * their sections (scripts/compose.mjs) — less the products the installed
+ * licence no longer includes (`hidden`, from lib/licence.ts)
+ */
+function sections(hidden: string[]) {
+  const products = PRODUCTS.filter((p) => !hidden.includes(p.id));
+  return CORE.map((section) => ({
+    ...section,
+    items: [
+      ...section.items,
+      ...products.flatMap((p) =>
+        p.nav
+          .filter((n) => n.section === section.key)
+          .map((n): Item => ({ href: n.href, icon: ICONS[n.icon] ?? Palette, label: n.label })),
+      ),
+    ],
+  })).filter((section) => section.items.length > 0);
+}
 
-export function AppSidebar({ t, lang, initialNav }: { t: Dict["shell"]; lang: Lang; initialNav: NavState }) {
+export function AppSidebar({
+  t,
+  lang,
+  initialNav,
+  hiddenProducts = [],
+}: {
+  t: Dict["shell"];
+  lang: Lang;
+  initialNav: NavState;
+  /** product ids composed in but not on the installed licence */
+  hiddenProducts?: string[];
+}) {
   const nav = usePref("nav", initialNav);
   const pathname = usePathname();
   const s = sidebar();
   const collapsed = nav === "collapsed";
+  const SECTIONS = sections(hiddenProducts);
 
   return (
     <aside className={s.root()} aria-label={t.navigation}>

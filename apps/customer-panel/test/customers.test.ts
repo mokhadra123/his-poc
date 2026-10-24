@@ -14,6 +14,8 @@ import { readProducts } from "../lib/server/products.ts";
 import { checkCustomerId, customerDir } from "../lib/server/repo.ts";
 import { type Fixture, makeRepo } from "./fixture.ts";
 
+const EVERY_THEME = ["slate", "ink", "pine", "graphite", "custom", "original"];
+
 const OWN = {
   id: "own",
   name: { en: "Own", ar: "خاص" },
@@ -23,6 +25,9 @@ const OWN = {
     nav: [{ href: "/reports/x", icon: "report", section: "revenue", label: { en: "X", ar: "س" } }],
     routes: [{ path: "reports/x", export: "Report", title: { en: "X", ar: "س" } }],
   },
+  // the control app's: the panel shows them and writes them back untouched
+  theme: { default: "pine", allowed: ["custom", "pine"], brand: "#1F6F8B" },
+  features: { themePaletteCustomization: false },
   notes: "kept as is",
 };
 
@@ -40,12 +45,18 @@ describe("customers", () => {
       products: "*",
       features: { themePaletteCustomization: true },
     });
+    repo.write("customers/neon/customer.json", {
+      id: "neon",
+      name: { en: "N", ar: "ن" },
+      products: [],
+      theme: { default: "neon", allowed: ["neon"], brand: null },
+    });
   });
   after(() => repo.cleanup());
 
   it("discovers every customer folder, editable or not", () => {
     const entries = listCustomers(repo.root);
-    assert.deepEqual(entries.map((e) => e.id).sort(), ["broken", "locked", "moved", "own", "plain"]);
+    assert.deepEqual(entries.map((e) => e.id).sort(), ["broken", "locked", "moved", "neon", "own", "plain"]);
     const broken = entries.find((e) => e.id === "broken");
     assert.match(broken?.problem ?? "", /not valid JSON/);
     const moved = entries.find((e) => e.id === "moved");
@@ -54,12 +65,23 @@ describe("customers", () => {
     assert.throws(() => getCustomer(repo.root, "nobody"), /There is no customer "nobody"/);
   });
 
-  it("reads a missing palette permission as not allowed", () => {
-    assert.equal(getCustomer(repo.root, "plain").features.themePaletteCustomization, false);
-    assert.equal(getCustomer(repo.root, "locked").features.themePaletteCustomization, true);
+  it("reads the themes, in @his/ui's order; without them, the older switch: missing = slate only, true = every theme", () => {
     const own = getCustomer(repo.root, "own");
+    assert.deepEqual(own.theme, { default: "pine", allowed: ["pine", "custom"], brand: "#1f6f8b" });
+    assert.equal(own.legacyTheme, false);
     assert.deepEqual(own.extensions, { routes: ["reports/x"], nav: 1, slots: ["visit.side-panel"] });
     assert.equal(own.ownPackage, "@his/customer-own");
+
+    const plain = getCustomer(repo.root, "plain");
+    assert.deepEqual(plain.theme, { default: "slate", allowed: ["slate"], brand: null });
+    assert.equal(plain.legacyTheme, true);
+    assert.deepEqual(getCustomer(repo.root, "locked").theme, { default: "slate", allowed: EVERY_THEME, brand: null });
+  });
+
+  it("lists a customer whose theme compose would refuse, but does not edit it", () => {
+    const neon = listCustomers(repo.root).find((e) => e.id === "neon");
+    assert.match(neon?.problem ?? "", /"theme\.allowed" has unknown themes: neon — fix it in the control app/);
+    assert.throws(() => getCustomer(repo.root, "neon"), /cannot be edited/);
   });
 
   it("rejects ids that are not plain folder names", () => {
@@ -70,47 +92,44 @@ describe("customers", () => {
     assert.throws(() => customerDir(repo.root, "../../etc"), /customer id/);
   });
 
-  it("saves name, products and the permission, and keeps everything else", () => {
+  it("saves name and products, and keeps everything else — theme and features too — in place", () => {
+    // an older page still sends the palette switch: it is not part of the edit
     const parsed = parseEdit(
       { name: { en: " Own Hospital ", ar: "خاص" }, products: ["pharmacy"], features: { themePaletteCustomization: true } },
       readProducts(repo.root),
     );
     assert.ok(parsed.ok);
+    assert.deepEqual(parsed.value, { name: { en: "Own Hospital", ar: "خاص" }, products: ["pharmacy"] });
     writeCustomer(repo.root, "own", buildDraft(repo.root, "own", parsed.value));
-    const saved = JSON.parse(repo.read("customers/own/customer.json"));
-    assert.deepEqual(saved, {
-      ...OWN,
-      name: { en: "Own Hospital", ar: "خاص" },
-      products: ["pharmacy"],
-      features: { themePaletteCustomization: true },
-    });
-    assert.ok(repo.read("customers/own/customer.json").endsWith("}\n"));
+    // compared as text: same keys, same order, 2-space JSON
+    const expected = { ...OWN, name: { en: "Own Hospital", ar: "خاص" }, products: ["pharmacy"] };
+    assert.equal(repo.read("customers/own/customer.json"), `${JSON.stringify(expected, null, 2)}\n`);
     assert.ok(!existsSync(join(repo.root, `customers/own/customer.json.${process.pid}.tmp`)));
   });
 
   it("refuses edits that would not compose or are incomplete", () => {
     const catalog = readProducts(repo.root);
-    const bad = parseEdit({ name: { en: "", ar: "x" }, products: ["billing", "billing", "radiology"], features: {} }, catalog);
+    const bad = parseEdit({ name: { en: "", ar: "x" }, products: ["billing", "billing", "radiology"] }, catalog);
     assert.ok(!bad.ok);
     assert.deepEqual(bad.errors, [
       "The English name is required",
       `"billing" is selected twice`,
       `"radiology" is not a product: no packages/*/his.product.json declares it`,
-      `"Allow theme palette changes" must be on or off`,
     ]);
-    assert.ok(!parseEdit({ name: { en: "a", ar: "b" }, products: "billing", features: { themePaletteCustomization: false } }, catalog).ok);
-    assert.ok(parseEdit({ name: { en: "a", ar: "b" }, products: "*", features: { themePaletteCustomization: false } }, catalog).ok);
+    assert.ok(!parseEdit({ name: { en: "a", ar: "b" }, products: "billing" }, catalog).ok);
+    assert.ok(parseEdit({ name: { en: "a", ar: "b" }, products: "*" }, catalog).ok);
   });
 
-  it("creates a customer once, with no products and the default palette", () => {
+  it("creates a customer once, with no products and the default theme only", () => {
     const created = createCustomer(repo.root, { id: "new-one", name: { en: "New", ar: "جديد" } });
     assert.deepEqual(created.products, []);
-    assert.equal(created.features.themePaletteCustomization, false);
+    assert.deepEqual(created.theme, { default: "slate", allowed: ["slate"], brand: null });
+    assert.equal(created.legacyTheme, false);
     assert.deepEqual(JSON.parse(repo.read("customers/new-one/customer.json")), {
       id: "new-one",
       name: { en: "New", ar: "جديد" },
       products: [],
-      features: { themePaletteCustomization: false },
+      theme: { default: "slate", allowed: ["slate"], brand: null },
     });
     assert.throws(() => createCustomer(repo.root, { id: "new-one", name: { en: "N", ar: "ج" } }), /already exists/);
     assert.throws(() => createCustomer(repo.root, { id: "../evil", name: { en: "N", ar: "ج" } }), /customer id/);

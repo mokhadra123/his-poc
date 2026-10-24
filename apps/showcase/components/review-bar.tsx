@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@his/ui";
-import { DENSITIES, deriveBrand, MODES, type Prefs, setPref, THEMES } from "@his/ui/theme";
+import { DENSITIES, deriveBrand, MODES, type Prefs, setPref, type Theme } from "@his/ui/theme";
 import { usePref } from "@his/ui/theme/client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -22,13 +22,16 @@ export function ReviewBar({
   prefs,
   lang,
   t,
-  paletteLocked,
+  themes,
+  pickBrand,
 }: {
   prefs: Prefs;
   lang: Lang;
   t: Dict["review"];
-  /** the customer may not change the palette: no theme group (see lib/features.ts) */
-  paletteLocked: boolean;
+  /** the customer's themes users may switch between; none when it has one (see lib/features.ts) */
+  themes: Theme[];
+  /** the custom theme's colour is the user's to pick (the hospital has none of its own) */
+  pickBrand: boolean;
 }) {
   // <html> is the source of truth, so the pressed states never go stale
   const theme = usePref("theme", prefs.theme);
@@ -63,15 +66,15 @@ export function ReviewBar({
         ))}
       </nav>
 
-      {paletteLocked ? null : (
+      {themes.length === 0 && !pickBrand ? null : (
         <>
           <Group label={t.theme}>
-            {THEMES.map((th) => (
+            {themes.map((th) => (
               <Choice key={th} pressed={theme === th} onClick={() => setPref("theme", th)}>
                 {t.themes[th]}
               </Choice>
             ))}
-            {theme === "custom" ? (
+            {theme === "custom" && pickBrand ? (
               <>
                 <input
                   type="color"

@@ -14,6 +14,7 @@ import { join } from "node:path";
 import type { RunAction, RunStatus } from "../types.ts";
 import { childEnv, type ComposeResult, runCompose } from "./compose.ts";
 import { findRepoRoot, isRecord, PanelError } from "./repo.ts";
+import { readTheme } from "./theme.ts";
 
 /** The showcase's dev port — `next dev --port 3100` in apps/showcase/package.json */
 export const SHOWCASE_PORT = 3100;
@@ -243,13 +244,13 @@ export function canConnect(port: number, host = "127.0.0.1", timeoutMs = 500): P
   });
 }
 
-/** What apps/showcase is composed for right now. */
+/** What apps/showcase is composed for right now: its "theme", or an older composition's palette flag. */
 function readComposed(root: string): RunStatus["composed"] {
   try {
     const record: unknown = JSON.parse(readFileSync(join(root, "apps/showcase/products.generated.json"), "utf8"));
     if (!isRecord(record) || typeof record.customer !== "string") return null;
-    const features = isRecord(record.features) ? record.features : {};
-    return { customerId: record.customer, themePaletteCustomization: features.themePaletteCustomization === true };
+    const theme = readTheme(record);
+    return { customerId: record.customer, theme: typeof theme === "string" ? null : theme.theme };
   } catch {
     return null;
   }

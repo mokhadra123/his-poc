@@ -11,13 +11,20 @@
   },
   "scripts": {
     "compose": "node scripts/compose.mjs",
-    "dev": "npm run compose && npm run dev -w @his/showcase",
+    "dev": "npm run compose && concurrently -n showcase,customer-panel \"npm run dev -w @his/showcase\" \"npm run dev -w @his/customer-panel\"",
+    "dev:showcase": "npm run compose && npm run dev -w @his/showcase",
+    "dev:customer-panel": "npm run compose && npm run dev -w @his/customer-panel",
     "build": "npm run compose && npm run build -w @his/showcase",
     "start": "node apps/showcase/.next/standalone/apps/showcase/server.js",
     "verify:build": "node scripts/verify-build.mjs",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint:tokens": "node scripts/check-tokens.mjs",
     "panel": "npm run dev -w @his/customer-panel",
+    "control": "concurrently -n licence-server,control \"npm run dev -w @his/licence-server\" \"npm run dev -w @his/control\"",
+    "licence-server": "npm run dev -w @his/licence-server",
     "test": "npm run test --workspaces --if-present"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.6"
   }
 }

@@ -5,7 +5,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Customer panel · HIS",
-  description: "Configure HIS customers, their products and theme permission, and run their composed app locally.",
+  description: "Configure HIS customers and their products, and run their composed app locally.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

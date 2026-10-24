@@ -33,7 +33,12 @@
       }
     ]
   },
-  "features": {
-    "themePaletteCustomization": false
+  "theme": {
+    "default": "pine",
+    "allowed": [
+      "slate",
+      "pine"
+    ],
+    "brand": null
   }
 }

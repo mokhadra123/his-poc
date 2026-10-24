@@ -1,6 +1,6 @@
-import { isPalettePref, PREF_COOKIES, parsePref, type Prefs } from "@his/ui/theme";
+import { PREF_COOKIES, parsePref, type Prefs, type Theme } from "@his/ui/theme";
 import { type NextRequest, NextResponse } from "next/server";
-import { PALETTE_LOCKED } from "./lib/features";
+import { THEME_CHOICES } from "./lib/features";
 import { LANG_COOKIE, LANGS, type Lang } from "./lib/lang";
 
 /*
@@ -9,8 +9,8 @@ import { LANG_COOKIE, LANGS, type Lang } from "./lib/lang";
  * Valid query values become cookies, invalid ones are dropped, then we
  * redirect to the clean URL (other query params are kept), so the server
  * renders the right <html> attributes on the very first paint.
- * A customer without the palette permission (lib/features.ts) gets the clean
- * URL for ?theme= and ?brand= too, but no cookie.
+ * A theme the customer does not have (lib/features.ts) gets the clean URL
+ * but no cookie; so does ?brand= when the hospital has its own colour.
  */
 const PREF_KEYS = Object.keys(PREF_COOKIES) as (keyof Prefs)[];
 
@@ -18,17 +18,17 @@ export function proxy(request: NextRequest) {
   const url = request.nextUrl.clone();
   const cookies: [string, string][] = [];
   let touched = false;
-  console.log("url", url);
 
   for (const key of PREF_KEYS) {
     let raw = url.searchParams.get(key);
-    console.log("raw", raw);
     if (raw === null) continue;
     touched = true;
     url.searchParams.delete(key);
-    if (PALETTE_LOCKED && isPalettePref(key)) continue;
+    // the customer's themes only, and a colour of one's own only when the hospital has none
+    if (key === "brand" && !THEME_CHOICES.pickBrand) continue;
     if (key === "brand" && !raw.startsWith("#")) raw = `#${raw}`;
     const value = parsePref(key, raw);
+    if (key === "theme" && !THEME_CHOICES.themes.includes(value as Theme)) continue;
     if (value !== undefined) cookies.push([PREF_COOKIES[key], value]);
   }
 

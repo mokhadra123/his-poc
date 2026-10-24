@@ -4,8 +4,9 @@ import { Button, cn, Status } from "@his/ui";
 import { Plus } from "lucide-react";
 import Link from "next/link";
 import { type MouseEvent, useCallback, useEffect, useState } from "react";
+import { themeCount } from "@/lib/themes";
 import type { CustomerEntry, ProductCatalog, RunStatus } from "@/lib/types";
-import { CustomerEditor, type Palettes } from "./customer-editor";
+import { CustomerEditor } from "./customer-editor";
 import { Notice } from "./fields";
 import { NewCustomer } from "./new-customer";
 import { RunPanel } from "./run-panel";
@@ -15,13 +16,11 @@ export function PanelApp({
   catalog,
   initialStatus,
   selectedId,
-  palettes,
 }: {
   customers: CustomerEntry[];
   catalog: ProductCatalog;
   initialStatus: RunStatus;
   selectedId: string | null;
-  palettes: Palettes;
 }) {
   const [status, setStatus] = useState(initialStatus);
   const [dirty, setDirty] = useState(false);
@@ -93,8 +92,7 @@ export function PanelApp({
                   </span>
                   <span className="truncate text-xs text-ink-3">
                     <code className="font-mono">{c.id}</code>
-                    {c.config ? ` · ${summary(c.config.products)}` : ""}
-                    {c.config?.features.themePaletteCustomization ? " · palette changeable" : ""}
+                    {c.config ? ` · ${summary(c.config.products)} · ${themeCount(c.config.theme)}` : ""}
                   </span>
                 </Link>
               </li>
@@ -110,7 +108,6 @@ export function PanelApp({
                 key={selected.id}
                 config={selected.config}
                 catalog={catalog}
-                palettes={palettes}
                 onDirtyChange={setDirty}
               />
             </main>

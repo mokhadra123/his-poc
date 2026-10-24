@@ -1,6 +1,7 @@
 import { SearchField, Signal, Status, Topbar, TopbarIconButton } from "@his/ui";
 import { Bell, Search } from "lucide-react";
 import type { ReactNode } from "react";
+import { LicenceBanner } from "@/components/licence-banner";
 import { type Mark, pick } from "@/lib/data";
 import { type Dict, dict } from "@/lib/i18n";
 import type { Lang } from "@/lib/lang";
@@ -50,6 +51,16 @@ export function MarkChip({ mark, lang }: { mark: Mark; lang: Lang }) {
   );
 }
 
-export function Page({ children }: { children: ReactNode }) {
-  return <div className="max-w-[1560px] px-gutter pt-page-y pb-14">{children}</div>;
+/**
+ * The page frame. The licence banner opens it, below the sticky topbar, so
+ * it scrolls with the page and never changes the chrome; the licence page
+ * shows the same state itself and turns it off.
+ */
+export function Page({ children, licenceBanner = true }: { children: ReactNode; licenceBanner?: boolean }) {
+  return (
+    <div className="max-w-[1560px] px-gutter pt-page-y pb-14">
+      {licenceBanner ? <LicenceBanner /> : null}
+      {children}
+    </div>
+  );
 }

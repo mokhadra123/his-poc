@@ -1,4 +1,3 @@
-import { DEFAULT_PREFS, THEMES } from "@his/ui/theme";
 import { PanelApp } from "@/components/panel-app";
 import { listCustomers } from "@/lib/server/customers";
 import { readProducts } from "@/lib/server/products";
@@ -37,7 +36,6 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ c
       catalog={readProducts(root)}
       initialStatus={status}
       selectedId={selectedId}
-      palettes={{ themes: [...THEMES], fallback: DEFAULT_PREFS.theme }}
     />
   );
 }

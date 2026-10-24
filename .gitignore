@@ -9,3 +9,13 @@ apps/showcase/lib/products.generated.ts
 apps/showcase/lib/slots.generated.ts
 apps/showcase/app/products.generated.css
 apps/showcase/products.generated.json
+
+# the control plane: local database, signing keys (never commit a private key)
+apps/licence-server/.data/
+# public keys the licence server publishes; compose embeds them in a build
+packages/licence/trusted-keys.json
+# an installation's licence store (scripts/compose.mjs --licence, the Licence page)
+apps/showcase/.licence/
+apps/showcase/lib/licence.generated.ts
+# per-installation release bundles (scripts/release.mjs)
+/releases/

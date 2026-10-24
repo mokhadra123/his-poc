@@ -15,8 +15,10 @@
  *               enabled and 404 when not, the sidebar links to them only when
  *               enabled, and the outlets it plugs into show its content only
  *               when enabled
- *   4. palette  a saved theme cookie, the theme picker and ?theme= links work
- *               only when the customer may change its palette
+ *   4. themes   the first paint is the customer's default theme; <html>
+ *               carries its policy (data-themes, data-brand, data-palette);
+ *               the theme picker, saved cookies and ?theme= / ?brand= links
+ *               work only within what the customer allows
  */
 import { spawn } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
@@ -28,7 +30,8 @@ const root = fileURLToPath(new URL("../", import.meta.url));
 const app = join(root, "apps/showcase");
 const next = join(app, ".next");
 const standalone = join(next, "standalone");
-const PORT = Number(process.env.VERIFY_PORT || 3300);
+// not 3300: that is the control app's (npm run control)
+const PORT = Number(process.env.VERIFY_PORT || 3400);
 
 const composed = JSON.parse(readFileSync(join(app, "products.generated.json"), "utf8"));
 const outlets = JSON.parse(readFileSync(join(root, "packages/slots/outlets.json"), "utf8"));
@@ -124,6 +127,11 @@ const serverDir = join(standalone, "apps/showcase");
 // served every page without its CSS and JS.
 check(existsSync(join(serverDir, ".next/static")), "standalone image holds .next/static (CSS, JS)");
 
+// a server already on the port would answer every check instead of this build
+if (await fetch(`http://127.0.0.1:${PORT}`, { redirect: "manual" }).then(() => true, () => false)) {
+  console.error(`Port ${PORT} is in use. Stop what runs there, or set VERIFY_PORT.`);
+  process.exit(1);
+}
 const server = spawn(process.execPath, ["server.js"], {
   cwd: serverDir,
   env: { ...process.env, PORT: String(PORT), HOSTNAME: "127.0.0.1" },
@@ -165,20 +173,60 @@ try {
     }
   }
 
-  // 4. palette: missing in an older composition counts as "may not change"
-  const changeable = composed.features?.themePaletteCustomization === true;
-  console.log(`\n4. palette (${changeable ? "customer may change it" : "default only"})`);
-  const saved = await (await fetch(`${base}/dashboard`, { headers: { cookie: "his-theme=pine" } })).text();
-  const html = saved.match(/<html[^>]*>/)?.[0] ?? "";
-  const theme = html.match(/\sdata-theme="([^"]*)"/)?.[1];
-  check((theme === "pine") === changeable, `saved theme cookie "pine" → data-theme="${theme}"`);
-  const locked = html.includes(' data-palette="locked"');
-  check(locked === !changeable, `<html data-palette="locked">: ${locked ? "yes" : "no"}`);
-  const picker = saved.includes('role="group" aria-label="Theme"');
-  check(picker === changeable, `theme picker in the review bar: ${picker ? "yes" : "no"}`);
-  const link = await fetch(`${base}/dashboard?theme=ink`, { redirect: "manual" });
-  const cookie = (link.headers.get("set-cookie") ?? "").includes("his-theme=ink");
-  check(cookie === changeable, `?theme=ink → ${link.status}, sets the theme cookie: ${cookie ? "yes" : "no"}`);
+  // 4. themes: the customer's policy (customer.json → "theme", set in the
+  // control app). An older composition without it has only the palette flag,
+  // read as compose reads it: true = every theme, false/missing = slate only.
+  const THEMES = ["slate", "ink", "pine", "graphite", "custom", "original"];
+  const policy = composed.theme ?? {
+    default: "slate",
+    allowed: composed.features?.themePaletteCustomization === true ? THEMES : ["slate"],
+    brand: null,
+  };
+  // what users may still change, as themeChoices() in @his/ui/theme decides it
+  const switchable = policy.allowed.length > 1;
+  const pickBrand = policy.brand === null && policy.allowed.includes("custom");
+  const choose = switchable || pickBrand;
+  console.log(
+    `\n4. themes (${switchable ? `${policy.default}, users switch between ${policy.allowed.join(", ")}` : `${policy.default} only`}` +
+      `${policy.brand ? `, brand ${policy.brand}` : pickBrand ? ", users pick the colour" : ""})`,
+  );
+  const htmlOf = (body) => body.match(/<html[^>]*>/)?.[0] ?? "";
+  const attr = (html, name) => html.match(new RegExp(`\\s${name}="([^"]*)"`))?.[1];
+  const quote = (value) => (value === undefined ? "none" : `"${value}"`);
+
+  // the first paint without cookies (the dashboard fetched above)
+  const first = htmlOf(dashboard);
+  check(attr(first, "data-theme") === policy.default, `no cookies → data-theme=${quote(attr(first, "data-theme"))}, the customer's default`);
+  const themes = attr(first, "data-themes");
+  const restricted = policy.allowed.length < THEMES.length;
+  check(themes === (restricted ? policy.allowed.join(" ") : undefined), `<html data-themes>: ${quote(themes)}`);
+  const locked = attr(first, "data-palette") === "locked";
+  check(locked === !choose, `<html data-palette="locked">: ${locked ? "yes" : "no"}`);
+  const brandLocked = attr(first, "data-brand") === "locked";
+  check(brandLocked === (policy.brand !== null), `<html data-brand="locked">: ${brandLocked ? "yes" : "no"}`);
+  if (policy.brand) {
+    const painted = first.includes(`--brand-custom:${policy.brand}`);
+    check(painted, `the hospital colour ${policy.brand} is on <html>: ${painted ? "yes" : "no"}`);
+  }
+  const picker = dashboard.includes('role="group" aria-label="Theme"');
+  check(picker === choose, `theme picker in the review bar: ${picker ? "yes" : "no"}`);
+
+  // a theme the customer does not have, and one users may switch to
+  const outside = THEMES.find((t) => !policy.allowed.includes(t));
+  const other = policy.allowed.find((t) => t !== policy.default);
+  if (!outside) console.log("  skip  every theme is allowed: no theme to refuse");
+  for (const [name, allowed] of [[outside, false], [other, true]]) {
+    if (!name) continue;
+    const saved = attr(htmlOf(await (await fetch(`${base}/dashboard`, { headers: { cookie: `his-theme=${name}` } })).text()), "data-theme");
+    const want = allowed ? name : policy.default;
+    check(saved === want, `saved theme cookie "${name}" → data-theme=${quote(saved)}`);
+    const link = await fetch(`${base}/dashboard?theme=${name}`, { redirect: "manual" });
+    const cookie = (link.headers.get("set-cookie") ?? "").includes(`his-theme=${name}`);
+    check(cookie === allowed, `?theme=${name} → ${link.status}, sets the theme cookie: ${cookie ? "yes" : "no"}`);
+  }
+  const colour = await fetch(`${base}/dashboard?brand=aa3355`, { redirect: "manual" });
+  const colourCookie = (colour.headers.get("set-cookie") ?? "").includes("his-brand=");
+  check(colourCookie === pickBrand, `?brand=aa3355 → ${colour.status}, sets the colour cookie: ${colourCookie ? "yes" : "no"}`);
 } finally {
   server.kill();
 }

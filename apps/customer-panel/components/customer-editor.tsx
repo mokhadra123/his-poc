@@ -1,45 +1,39 @@
 "use client";
 
 import { ActionBar, Button, cn, Meta, Panel, PanelBody, PanelHeader, Segmented } from "@his/ui";
-import { RotateCcw, Save } from "lucide-react";
-import { useEffect, useId, useState, useTransition } from "react";
+import type { Theme } from "@his/ui/theme";
+import { ExternalLink, RotateCcw, Save } from "lucide-react";
+import { type CSSProperties, useEffect, useState, useTransition } from "react";
 import { saveCustomer } from "@/app/actions";
+import { controlAppearanceUrl, THEME_LABELS } from "@/lib/themes";
 import type { ActionResult, CustomerConfig, CustomerEdit, ProductCatalog } from "@/lib/types";
-import { Notice, Switch, TextField } from "./fields";
-
-export type Palettes = { themes: string[]; fallback: string };
+import { Notice, TextField } from "./fields";
 
 export function CustomerEditor({
   config,
   catalog,
-  palettes,
   onDirtyChange,
 }: {
   config: CustomerConfig;
   catalog: ProductCatalog;
-  palettes: Palettes;
   onDirtyChange: (dirty: boolean) => void;
 }) {
   const allIds = catalog.products.map((p) => p.id);
   const [name, setName] = useState(config.name);
   const [all, setAll] = useState(config.products === "*");
   const [picked, setPicked] = useState<string[]>(config.products === "*" ? allIds : config.products);
-  const [palette, setPalette] = useState(config.features.themePaletteCustomization);
   const [result, setResult] = useState<ActionResult | null>(null);
   const [saving, startSaving] = useTransition();
-  const ids = { label: useId(), help: useId() };
 
   // catalog order, then anything unknown (which the server will refuse, by name)
   const ordered = (list: string[]) => [...allIds.filter((id) => list.includes(id)), ...list.filter((id) => !allIds.includes(id))];
   const edit: CustomerEdit = {
     name: { en: name.en.trim(), ar: name.ar.trim() },
     products: all ? "*" : ordered(picked),
-    features: { themePaletteCustomization: palette },
   };
   const saved: CustomerEdit = {
     name: config.name,
     products: config.products === "*" ? "*" : ordered(config.products),
-    features: config.features,
   };
   const dirty = JSON.stringify(edit) !== JSON.stringify(saved);
   const unknown = all ? [] : picked.filter((id) => !allIds.includes(id));
@@ -59,7 +53,6 @@ export function CustomerEditor({
     setName(config.name);
     setAll(config.products === "*");
     setPicked(config.products === "*" ? allIds : config.products);
-    setPalette(config.features.themePaletteCustomization);
     setResult(null);
   }
 
@@ -174,39 +167,7 @@ export function CustomerEditor({
         </PanelBody>
       </Panel>
 
-      <Panel>
-        <PanelHeader level="h3" title="Theme palette" />
-        <PanelBody>
-          <div className="flex items-start gap-4">
-            <Switch checked={palette} onChange={setPalette} labelledBy={ids.label} describedBy={ids.help} />
-            <div className="flex min-w-0 flex-col gap-2">
-              <span id={ids.label} className="font-semibold text-ink">
-                Allow theme palette changes
-              </span>
-              <dl id={ids.help} className="flex flex-col gap-1 text-sm">
-                <div className={palette ? "text-ink" : "text-ink-3"}>
-                  <dt className="inline font-semibold">On: </dt>
-                  <dd className="inline">
-                    users can switch between the palettes the design system ships ({palettes.themes.join(", ")}) in
-                    the theme bar; each browser remembers its choice.
-                  </dd>
-                </div>
-                <div className={palette ? "text-ink-3" : "text-ink"}>
-                  <dt className="inline font-semibold">Off (default): </dt>
-                  <dd className="inline">
-                    the app always uses the default palette ({palettes.fallback}). The theme picker is hidden, and
-                    saved choices or ?theme= links are ignored.
-                  </dd>
-                </div>
-              </dl>
-              <p className="text-xs text-ink-3">
-                Light/dark mode and density stay each user&apos;s choice either way. Applies the next time this customer
-                is composed.
-              </p>
-            </div>
-          </div>
-        </PanelBody>
-      </Panel>
+      <ThemesPanel config={config} />
 
       <Panel>
         <PanelHeader level="h3" title="Customer's own code" meta={<Meta>read-only</Meta>} />
@@ -258,5 +219,92 @@ export function CustomerEditor({
         </Notice>
       ) : null}
     </div>
+  );
+}
+
+/**
+ * A theme's accent colour. data-theme on the element is enough: every
+ * theme's tokens are scoped to [data-theme]. The custom theme takes the
+ * hospital's colour the way <html> does, as --brand-custom.
+ */
+function Swatch({ theme, brand }: { theme: Theme; brand: string | null }) {
+  return (
+    <span
+      aria-hidden
+      data-theme={theme}
+      style={theme === "custom" && brand ? ({ "--brand-custom": brand } as CSSProperties) : undefined}
+      className="size-4 shrink-0 rounded-ctl border border-line bg-accent"
+    />
+  );
+}
+
+/** The customer's themes, read-only: they are set in the control app. */
+function ThemesPanel({ config }: { config: CustomerConfig }) {
+  const { theme } = config;
+  const switchable = theme.allowed.length > 1;
+  return (
+    <Panel>
+      <PanelHeader level="h3" title="Themes" meta={<Meta>read-only</Meta>} />
+      <PanelBody className="flex flex-col gap-3 text-sm text-ink-2">
+        <dl className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-4 gap-y-2">
+          <dt className="text-ink-3">Default</dt>
+          <dd className="flex items-center gap-2 text-ink">
+            <Swatch theme={theme.default} brand={theme.brand} />
+            {THEME_LABELS[theme.default]}
+          </dd>
+          {/* level with the first line of chips */}
+          <dt className="py-1 text-ink-3">Allowed</dt>
+          <dd>
+            <ul className="flex flex-wrap gap-2">
+              {theme.allowed.map((name) => (
+                <li key={name} className="flex items-center gap-2 rounded-ctl border border-line bg-surface px-2 py-1 text-ink">
+                  <Swatch theme={name} brand={theme.brand} />
+                  {THEME_LABELS[name]}
+                  {name === theme.default ? <span className="text-xs text-ink-3">default</span> : null}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-1 text-xs text-ink-3">
+              {switchable
+                ? "Users start on the default and may switch between these; each browser remembers its choice."
+                : "One fixed look: the app has no theme picker."}
+            </p>
+          </dd>
+          <dt className="text-ink-3">Hospital colour</dt>
+          <dd className="flex items-center gap-2">
+            {theme.brand ? (
+              <>
+                <Swatch theme="custom" brand={theme.brand} />
+                <code className="font-mono text-ink">{theme.brand}</code>
+              </>
+            ) : theme.allowed.includes("custom") ? (
+              "none — users pick it"
+            ) : (
+              "—"
+            )}
+          </dd>
+        </dl>
+        {config.legacyTheme ? (
+          <p className="text-xs text-ink-3">
+            Read from the older <code className="font-mono">features.themePaletteCustomization</code> switch (on: every
+            theme, off: Slate only). The control app replaces it with <code className="font-mono">theme</code> when it
+            saves.
+          </p>
+        ) : null}
+        <p className="text-xs text-ink-3">
+          Edited in the control app:{" "}
+          <a
+            href={controlAppearanceUrl(config.id)}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1 font-medium text-accent-text underline"
+          >
+            {config.name.en} → Appearance
+            <ExternalLink aria-hidden className="size-3.5" />
+          </a>
+          . Saving here keeps it as it is; it applies the next time this customer is composed.
+        </p>
+      </PanelBody>
+    </Panel>
   );
 }
