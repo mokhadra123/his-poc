@@ -1,5 +1,14 @@
 {
   "id": "al-shifa",
-  "name": { "en": "Al-Shifa Hospital", "ar": "مستشفى الشفاء" },
-  "products": ["billing", "pharmacy"]
+  "name": {
+    "en": "Al-Shifa Hospital",
+    "ar": "مستشفى الشفاء"
+  },
+  "products": [
+    "billing",
+    "pharmacy"
+  ],
+  "features": {
+    "themePaletteCustomization": false
+  }
 }

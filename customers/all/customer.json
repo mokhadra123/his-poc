@@ -1,5 +1,11 @@
 {
   "id": "all",
-  "name": { "en": "All products (dev)", "ar": "كل المنتجات (تطوير)" },
-  "products": "*"
+  "name": {
+    "en": "All products (dev)",
+    "ar": "كل المنتجات (تطوير)"
+  },
+  "products": "*",
+  "features": {
+    "themePaletteCustomization": true
+  }
 }

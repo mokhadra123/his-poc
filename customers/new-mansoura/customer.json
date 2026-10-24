@@ -1,0 +1,17 @@
+{
+  "id": "new-mansoura",
+  "name": {
+    "en": "new Mansoura",
+    "ar": "المنصورة الجديده"
+  },
+  "products": [],
+  "theme": {
+    "default": "original",
+    "allowed": [
+      "slate",
+      "ink",
+      "original"
+    ],
+    "brand": null
+  }
+}

@@ -11,8 +11,9 @@
  */
 import { cpSync, existsSync, rmSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const app = new URL("../apps/showcase/", import.meta.url).pathname;
+const app = fileURLToPath(new URL("../apps/showcase/", import.meta.url));
 const server = join(app, ".next/standalone/apps/showcase");
 
 if (!existsSync(join(server, "server.js"))) {

@@ -1,5 +1,6 @@
 import { Button, Ltr, NameCell, PageHeader, Panel, Table, Td, Th, Tr } from "@his/ui";
 import { Download, Ellipsis, Eye, Plus } from "lucide-react";
+import { WriteButton } from "@/components/licence-client";
 import { MarkChip, Page, PageTopbar } from "@/components/page-parts";
 import { PatientFilters } from "@/components/patient-filters";
 import { patients, pick } from "@/lib/data";
@@ -24,10 +25,10 @@ export default async function PatientsPage() {
                 <Download aria-hidden />
                 {p.export}
               </Button>
-              <Button tone="primary">
+              <WriteButton tone="primary">
                 <Plus aria-hidden />
                 {t.dashboard.register}
-              </Button>
+              </WriteButton>
             </>
           }
         />

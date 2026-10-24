@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@his/ui";
-import { DENSITIES, deriveBrand, MODES, type Prefs, setPref, THEMES } from "@his/ui/theme";
+import { DENSITIES, deriveBrand, MODES, type Prefs, setPref, type Theme } from "@his/ui/theme";
 import { usePref } from "@his/ui/theme/client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -18,7 +18,21 @@ const PAGES = [
   { href: "/visit", key: "visit" },
 ] as const;
 
-export function ReviewBar({ prefs, lang, t }: { prefs: Prefs; lang: Lang; t: Dict["review"] }) {
+export function ReviewBar({
+  prefs,
+  lang,
+  t,
+  themes,
+  pickBrand,
+}: {
+  prefs: Prefs;
+  lang: Lang;
+  t: Dict["review"];
+  /** the customer's themes users may switch between; none when it has one (see lib/features.ts) */
+  themes: Theme[];
+  /** the custom theme's colour is the user's to pick (the hospital has none of its own) */
+  pickBrand: boolean;
+}) {
   // <html> is the source of truth, so the pressed states never go stale
   const theme = usePref("theme", prefs.theme);
   const mode = usePref("mode", prefs.mode);
@@ -52,38 +66,42 @@ export function ReviewBar({ prefs, lang, t }: { prefs: Prefs; lang: Lang; t: Dic
         ))}
       </nav>
 
-      <Group label={t.theme}>
-        {THEMES.map((th) => (
-          <Choice key={th} pressed={theme === th} onClick={() => setPref("theme", th)}>
-            {t.themes[th]}
-          </Choice>
-        ))}
-        {theme === "custom" ? (
-          <>
-            <input
-              type="color"
-              aria-label={t.pickColour}
-              value={brand}
-              onChange={(e) => {
-                setBrand(e.target.value);
-                setPref("brand", e.target.value);
-              }}
-              className="ms-1 size-6 cursor-pointer rounded-ctl border border-surface/30 bg-transparent"
-            />
-            {lowContrast || nearCritical ? (
-              <span role="status" className="ms-1 whitespace-nowrap text-surface/80 dark:text-ink-2">
-                ⚠ {lowContrast ? t.lowContrast : t.nearCritical}
-              </span>
+      {themes.length === 0 && !pickBrand ? null : (
+        <>
+          <Group label={t.theme}>
+            {themes.map((th) => (
+              <Choice key={th} pressed={theme === th} onClick={() => setPref("theme", th)}>
+                {t.themes[th]}
+              </Choice>
+            ))}
+            {theme === "custom" && pickBrand ? (
+              <>
+                <input
+                  type="color"
+                  aria-label={t.pickColour}
+                  value={brand}
+                  onChange={(e) => {
+                    setBrand(e.target.value);
+                    setPref("brand", e.target.value);
+                  }}
+                  className="ms-1 size-6 cursor-pointer rounded-ctl border border-surface/30 bg-transparent"
+                />
+                {lowContrast || nearCritical ? (
+                  <span role="status" className="ms-1 whitespace-nowrap text-surface/80 dark:text-ink-2">
+                    ⚠ {lowContrast ? t.lowContrast : t.nearCritical}
+                  </span>
+                ) : null}
+              </>
             ) : null}
-          </>
-        ) : null}
-      </Group>
+          </Group>
 
-      {theme === "original" ? (
-        <span role="status" className="whitespace-nowrap text-surface/80 dark:text-ink-2">
-          ⓘ {t.originalNote}
-        </span>
-      ) : null}
+          {theme === "original" ? (
+            <span role="status" className="whitespace-nowrap text-surface/80 dark:text-ink-2">
+              ⓘ {t.originalNote}
+            </span>
+          ) : null}
+        </>
+      )}
 
       <Group label={t.mode}>
         {MODES.map((m) => (

@@ -1,5 +1,6 @@
 import { Button, cn, ListRow, Meta, PageHeader, Panel, PanelBody, PanelHeader, Stat } from "@his/ui";
 import { CalendarDays, Plus } from "lucide-react";
+import { WriteButton } from "@/components/licence-client";
 import { MarkChip, Page, PageTopbar } from "@/components/page-parts";
 import { appointments, attention, pick, queue, revenue } from "@/lib/data";
 import { getDict, getLang } from "@/lib/i18n";
@@ -23,10 +24,10 @@ export default async function DashboardPage() {
                 <CalendarDays aria-hidden />
                 {d.schedule}
               </Button>
-              <Button tone="primary">
+              <WriteButton tone="primary">
                 <Plus aria-hidden />
                 {d.register}
-              </Button>
+              </WriteButton>
             </>
           }
         />
